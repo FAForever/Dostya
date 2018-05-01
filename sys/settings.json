@@ -1,0 +1,12 @@
+{
+  "debug-mode": false,
+  "dev-only-mode": false,
+  "dev-only-commands": ["addpoints", "setpoints"],
+  "devs": [125055986632228865, 142367571256147968],
+  "prefixes": ["!", "QAI!", "QAIx!"],
+  "write-logs": true,
+  "aliases": {
+	"?": "!wiki ",
+	"#": "!replay "
+  }
+}
