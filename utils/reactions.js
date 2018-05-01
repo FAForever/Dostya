@@ -953,7 +953,7 @@ function react(message, callBack){
 				return;
 				break;
 			case "help":
-				sendMessage(message.author, "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya");
+				callBack(sendMessage(message.author, "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya/blob/master/README.md"));
 				break;
 		}
 	}
@@ -1050,6 +1050,9 @@ function getPoints(database, userId, function_callback){
 			database.get('SELECT `points` FROM users WHERE id='+userId, function(err, row) {
 				if (err){
 					utils.log(err, '><');
+				}
+				if (row == undefined){
+					return;
 				}
 				function_callback(row.points);
 			});   
