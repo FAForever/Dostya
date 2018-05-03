@@ -1,0 +1,12 @@
+{
+  "debug-mode": false,
+  "dev-only-mode": false,
+  "dev-only-commands": ["addpoints", "setpoints"],
+  "devs": [142367571256147968],
+  "prefixes": ["!", "Dostya! "],
+  "write-logs": true,
+  "cooldown":30,
+  "aliases": {
+	"#": "!replay "
+  }
+}
