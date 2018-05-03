@@ -6,7 +6,13 @@
   "prefixes": ["!", "Dostya! "],
   "write-logs": true,
   "cooldown":30,
+  "player-search-limit":5,
   "aliases": {
 	"#": "!replay "
+  },
+  "urls":{
+	"unitDB":"http://direct.faforever.com/faf/unitsDB/",
+	"wiki":"https://wiki.faforever.com/",
+	"api":"https://api.faforever.com/data/"
   }
 }

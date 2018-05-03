@@ -5,20 +5,469 @@
 ///
 ///////////////////
 
-
+const Discord = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require("fs");
-const https = require('https');
-const http = require('http');
 
 const ircUplink = require('./irc_uplink.js');
 const utils = require('./utility.js');
+
 let receivers = [];
+let lastAnimatedMessage = {};
 
 /// On irc message received, send from IRC
 ircUplink.client.addListener('message', function (author, to, message) {
 	sendFromIrc(author, message);
 });
+
+/////////////////
+////
+/// Execute command given
+/// Main bot behavior function
+///
+function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
+	
+	const cooldownWhitelist = ["respond", "alive", "unit", "searchunit", "wiki", "pool", "ladderpool", "ladder", "replay", "lastreplay", "clan", "player", "ratings", "searchplayer"];
+	if (cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
+		/// Animates cooldown
+		animateCooldown(message, cooldown);
+		callback(1);
+	}
+	else if (settings["dev-only-mode"] && settings["devs"].indexOf(message.author.id) < 0){
+		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!");
+		callback(4);
+	}
+	else{
+		switch (command){
+			default:
+				callback(2);
+				break;
+			
+			case "respond":
+			case "alive":
+				replyToMessage(message, "Dostya is still up.")
+					.then(callback(0));
+				break;
+				
+			case "unit":
+			case "searchunit":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchUnitData(arguments, settings.urls.unitDB, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "wiki":
+				if (arguments == null ||!utils.isAlphanumeric(arguments.replace(/ /g, ""))){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchWikiArticle(arguments, settings.urls.wiki, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "pool":
+			case "ladderpool":
+			case "ladder":
+				fetchLadderPool(settings.urls.api, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "replay":
+			case "lastreplay":
+				if (arguments == null || (command == "replay" && !utils.isNumeric(arguments))){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchReplay(command, arguments, settings.urls.api, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "clan":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchClan(arguments, settings.urls.api, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "player":
+			case "ratings":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchPlayer(arguments, settings.urls.api, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "searchplayer":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				fetchPlayerList(arguments, settings['player-search-limit'], settings.urls.api, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(0))
+				});
+				break;
+				
+			case "help":
+				sendMessage(message.author, "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya/blob/master/README.md")
+				.then(callback(0));
+				break;
+				
+			case "sendtracker":
+			case "tracker":
+				sendTrackerFile(message.author)
+				.then(callback(0));
+				break;
+		}
+	}
+}
+///
+/// End of
+///
+///////////////
+
+/// Send the tracker file to the users on demand
+function sendTrackerFile(author){
+	if (fs.existsSync(utils.trackfile)){
+		utils.log("Sent trackerfile to "+author.username+"", "<<");
+		return author.send({ files: [new Discord.Attachment(utils.trackfile)] });
+	}
+}	
+
+/// Searches for a player and returns result as a block message
+function fetchPlayerList(searchTerm, limit, apiUrl, callback){
+	
+   utils.httpsFetch(apiUrl+'player?filter=login=="'+searchTerm+'*"&page[limit]='+(limit+1)+'', function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
+		}
+		
+		const data = JSON.parse(d);
+		if (data.data != undefined && data.data.length > 0){
+			let finalMsg = "Search results for "+searchTerm+":\n```";
+			let maxQ = limit+1;
+			for (i = 0; i < Math.min(data.data.length, maxQ); i++){
+				const thisPlayer = data.data[i];
+				if (thisPlayer.type == "player"){
+					finalMsg += thisPlayer.attributes.login+"\n";
+				}
+				else{
+					maxQ++;
+					continue;
+				}
+			}
+			if (data.data.length > limit){
+				finalMsg += '...\n\n```Only the first '+limit+" results are displayed";
+			}
+			else{
+				finalMsg += '```';
+			}
+			callback(finalMsg);
+		}
+		else{
+			callback("No results for this player name.");
+		}
+	});
+}
+
+/// Fetches player info and formats it as an embed message
+function fetchPlayer(playerName, apiUrl, callback){
+				   
+   utils.httpsFetch(apiUrl+'player?filter=login=="'+playerName+'"&include=clanMemberships.clan,globalRating,ladder1v1Rating,names,avatarAssignments.avatar', function(d){
+				
+		const data = JSON.parse(d);
+		if (data.data != undefined && data.data.length > 0){
+			
+			let player = {
+				id : data.data[0].id,
+				name : data.data[0].attributes.login,
+				createTime : data.data[0].attributes.createTime,
+				updateTime : data.data[0].attributes.updateTime,
+				clans : [],
+				aliases : [],
+				avatarId : '',
+				avatarUrl : '',
+				lastAvatarTime: null
+			}
+			
+			const inc = data.included;
+			
+			for (let i = 0; i < inc.length; i++){
+				let thisData = inc[i];
+				switch (thisData.type){
+					default:
+						continue;
+						break;
+						
+					case "nameRecord":
+						player.aliases.push(thisData.attributes.name);
+						break;
+					
+					case "clan":	
+						player.clans.push({
+							name: thisData.attributes.name,
+							tag: thisData.attributes.tag,
+							size: thisData.relationships.memberships.data.length,
+							websiteUrl: thisData.attributes.websiteUrl,
+						});
+						break;
+					
+					case "globalRating":	
+						player.global = {};
+						player.global.rating = thisData.attributes.rating;
+						break;
+					
+					case "ladder1v1Rating":	
+						player.ladder = {};
+						player.ladder.rating = thisData.attributes.rating;
+						break;
+						
+					case "avatarAssignment":
+						if (player.lastAvatarTime < Date.parse(thisData.attributes.updateTime) && thisData.attributes.selected){
+							player.avatarId = thisData.relationships.avatar.data.id;
+							player.lastAvatarTime = Date.parse(thisData.attributes.updateTime);
+						}
+						break;
+				}
+			}
+			
+			for (let i = 0; i < inc.length; i++){
+				let thisData = inc[i];
+				switch (thisData.type){
+					case "avatar":
+						if (thisData.id == player.avatarId){
+							player.avatarUrl = thisData.attributes.url.replace(/( )/g, "%20");
+						}
+						break;
+				}
+			};
+			
+			
+			let embedMes = {
+				"content": "Player info for ["+player.name+"]",
+			  "embed": {
+				"title": "ID : "+player.id+"",
+				"color": 0xFF0000,
+				"author": {
+				  "name": player.name
+				},
+				"fields": []
+			  }
+			}
+			
+			aliasString = "None";
+			
+			if (player.aliases.length > 0){
+				const maxAliases = 5; // max aliases
+				aliasString = "";
+				for (var i = 0; i < Math.min(player.aliases.length, maxAliases); i++){
+					aliasString += player.aliases[i]+"\n";
+				}
+				if (player.aliases.length > maxAliases){
+					aliasString += "...";
+				}
+			}
+			
+			embedMes["embed"].fields.push(
+				  {
+					"name": "Aliases",
+					"value": aliasString,
+					"inline": false
+				  });
+			
+			if (player.avatarUrl != ''){
+				embedMes["embed"].thumbnail = {};
+				embedMes["embed"].thumbnail.url = player.avatarUrl;
+			}
+			
+			if (player.ladder){
+				embedMes["embed"].fields.push(
+				  {
+					"name": "Ladder rating",
+					"value": ""+Math.floor(player.ladder.rating),
+					"inline": true
+				  });
+			}
+			
+			if (player.global){
+				embedMes["embed"].fields.push(
+				  {
+					"name": "Global rating",
+					"value": ""+Math.floor(player.global.rating),
+					"inline": true
+				  });
+			}
+			
+			if (player.clans.length > 0){
+				
+				for (i = 0; i < player.clans.length; i++){
+					const thisClan = player.clans[i];
+					embedMes["embed"].fields.push(
+					  {
+						"name": "Clan : "+thisClan.name+"["+thisClan.tag+"]"+"",
+						"value": "Clan size : "+thisClan.size+"\n"+"URL : "+thisClan.websiteUrl,
+					  });
+				}
+			}
+		
+		callback(embedMes);
+		return;
+	}
+	else{
+		callback("Requested player does not exist.");
+		return;
+	}
+  
+});
+}
+
+/// Fetches clan info and formats it as an embed message
+function fetchClan(clanNameOrTag, apiUrl, callback){
+	utils.httpsFetch(apiUrl+'clan?filter=name=="'+clanNameOrTag+'",tag=="'+clanNameOrTag+'"&include=memberships.player&fields[player]=login&fields[clanMembership]=createTime,player&fields[clan]=name,description,websiteUrl,createTime,tag,leader', function(d){
+	if (Number.isInteger(d)){
+		callback("Server returned the error `"+d+"`.");
+		return;
+	}
+	const data = JSON.parse(d);
+	
+	if (data.data != undefined && data.data.length > 0){
+		
+		let clan = {
+			id : data.data[0].id,
+			name : data.data[0].attributes.name+" ["+data.data[0].attributes.tag+"]",
+			createTime : data.data[0].attributes.createTime,
+			description : data.data[0].attributes.description,
+			websiteUrl : data.data[0].attributes.websiteUrl,
+			leaderId : data.data[0].relationships.leader.data.id,
+			users : {},
+			leader : "Unknown"
+		}
+		
+		const inc = data.included;
+		
+		for (let i = 0; i < inc.length; i++){
+			let thisData = inc[i];
+			switch (thisData.type){
+				default:
+					continue;
+					break;
+					
+				case "player":
+					if (clan.users[thisData.id] == undefined){
+						clan.users[thisData.id] = {}
+					}
+					clan.users[thisData.id].name = (thisData.attributes.login);
+					if (thisData.id == clan.leaderId){
+						clan.users[thisData.id].leader = true;
+					}
+					else{
+						clan.users[thisData.id].leader = false;
+					}
+					break;
+					
+				case "clanMembership":
+					const playerId = thisData.relationships.player.data.id;
+					if (clan.users[playerId] == undefined){
+						clan.users[playerId] = {}
+					}
+					clan.users[playerId].joinedAt = utils.formattedDate(new Date(Date.parse(thisData.attributes.createTime)));
+					
+					break;
+			}
+		}
+		
+		if (clan.description == null || clan.description == ""){
+			clan.description = "None";
+		}
+		
+		
+		let embedMes = {
+			"content": "Clan info for ["+clanNameOrTag+"]",
+		  "embed": {
+			"title": "ID : "+clan.id+"",
+			"color": 0xFF0000,
+			"author": {
+			  "name": clan.name,
+			  "url": clan.websiteUrl
+			},
+			"fields": [
+			{
+				"name": "Created",
+				"value": clan.createTime,
+				"inline":true
+			},
+			{
+				"name": "URL",
+				"value": clan.websiteUrl,
+				"inline":true
+			},
+			{
+				"name": "Clan size",
+				"value": Object.keys(clan.users).length,
+				"inline":true
+			},
+			{
+				"name": "Description",
+				"value": clan.description,
+			}
+			]
+		  }
+		}
+		
+		const userArr = Object.keys(clan.users);
+		if (userArr.length > 0){
+			for (i = 0; i < userArr.length; i++){
+				let name = clan.users[userArr[i]].name;
+				let sub = clan.users[userArr[i]].joinedAt;
+				if (clan.users[userArr[i]].leader === true){
+					sub = "[Leader]";
+				}
+				
+				embedMes["embed"].fields.push(
+				  {
+					"name": name,
+					"value": sub,
+					"inline": true
+				  });
+			}
+		}
+		
+		callback(embedMes);
+		return;
+	}
+	else{
+		callback("Requested clan does not exist.");
+		return;
+	}
+  
+});
+}
 
 /// Clears the receiver list
 function cleanReceivers(){
@@ -124,39 +573,438 @@ function onPrefixFound(message, settings, utils, callback){
 	}
 }
 
-/// Execute command given
-function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
-	
-	if (cooldown <= 0){
-	
-		switch (command){
-			case "respond":
-			case "alive":
-				sendMessage(message.channel, "Dostya is still up.")
-					.then(callback(0))
-					.catch(utils.log("Error while sending message", "><"));
-				break;
-				
+/// Fetches an embed message about the replay given / id or playername
+function fetchReplay(command, replayIdOrName, apiUrl, callback){
+   
+   const includes = 'include=mapVersion,playerStats,mapVersion.map,playerStats.player,featuredMod,playerStats.player.globalRating,playerStats.player.ladder1v1Rating';
+   let fetchUrl = apiUrl+'game/'+replayIdOrName+'?'+includes;
+   
+   if (command == 'lastreplay'){
+		fetchUrl = apiUrl+'game?filter=playerStats.player.login=="'+replayIdOrName+'"&sort=-endTime&page[size]=1&'+includes;
+   }				   
+   
+   utils.httpsFetch(fetchUrl, function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
 		}
+		const data = JSON.parse(d);
 		
-	}
-	else{
-		/// Will animate cooldown
-		const toAnimate = ["respond", "alive"];
-	}
+		if (data != undefined && data.data != undefined && (
+				(Array.isArray(data.data) && data.data.length > 0) || data.data.attributes != undefined)								
+			){
+			
+			if (command == 'lastreplay'){
+				data.data = data.data[0];
+			}
+			
+			let replay = {
+				id : replayIdOrName,
+				name : data.data.attributes.name,
+				replayUrl : data.data.attributes.replayUrl.replace(/( )/g, "%20"),
+				startTime : data.data.attributes.startTime,
+				victoryCondition : data.data.attributes.victoryCondition,
+				validity : data.data.attributes.validity,
+				gameType: "",
+				technicalGameType: "",
+				imgUrl: "",
+				mapName: "",
+				mapVersion: "",
+				mapType: "",
+				mapSize: "",
+				players: {},
+				ranked:false
+			}
+			
+			const inc = data.included;
+			
+			for (let i = 0; i < inc.length; i++){
+				let thisData = inc[i];
+				switch (thisData.type){
+					default:
+						continue;
+						break;
+						
+					case "mapVersion":
+						replay.imgUrl = thisData.attributes.thumbnailUrlSmall.replace(/( )/g, "%20");
+						replay.mapVersion = thisData.attributes.version;
+						replay.mapSize = ((thisData.attributes.width/512)*10)+"x"+((thisData.attributes.height/512)*10)+" km";
+						replay.ranked = thisData.attributes.ranked;
+						break;
+						
+					case "map":
+						replay.mapName = thisData.attributes.displayName;
+						replay.mapType = thisData.attributes.mapType;
+						break;
+						
+					case "gamePlayerStats":
+						const gpsid = thisData.relationships.player.data.id;
+						if (replay.players[gpsid] == undefined){
+							replay.players[gpsid] = {};
+						}
+						replay.players[gpsid].slot = thisData.attributes.startSpot;
+						replay.players[gpsid].score = thisData.attributes.score;
+						replay.players[gpsid].faction = thisData.attributes.faction;
+						replay.players[gpsid].ai = thisData.attributes.ai;
+						replay.players[gpsid].team = thisData.attributes.team;
+						break;
+					
+					case "player":
+						const pid = thisData.id;
+						if (replay.players[pid] == undefined){
+							replay.players[pid] = {};
+						}
+						replay.players[pid].name = thisData.attributes.login;
+					
+						break;
+						
+					case "featuredMod":
+						switch (thisData.attributes.technicalName){
+							default:
+								replay.gameType = thisData.attributes.displayName;
+								replay.technicalGameType = thisData.attributes.technicalName;
+								break;
+								
+							case "faf":
+								break;
+						}
+						break;
+						
+					case "ladder1v1Rating":
+						const lid = thisData.relationships.player.data.id;
+						replay.players[lid].ladderRating = Math.floor(thisData.attributes.rating);
+						break;
+						
+					case "globalRating":
+						const gid = thisData.relationships.player.data.id;
+						replay.players[gid].globalRating = Math.floor(thisData.attributes.rating);
+						
+						break;
+				}
+			}
+			
+			let gm = replay.gameType;
+			if (replay.gameType != ""){
+				gm = "["+gm+"] ";
+			}
+			
+			let embedMes = {
+			  "embed": {
+				"title": "**Download replay #"+replay.id+"**",
+				"url": replay.replayUrl,
+				"color": 0xFF0000,
+				"thumbnail": {
+				  "url": replay.imgUrl
+				},
+				"author": {
+				  "name": gm+replay.name,
+				  "url": replay.replayUrl,
+				},
+				"fields": [
+				  {
+					"name": "Start time",
+					"value": replay.startTime,
+					"inline": true
+				  },
+				  {
+					"name": "Victory Condition",
+					"value": replay.victoryCondition,
+					"inline": true
+				  },
+				  {
+					"name": "Validity",
+					"value": replay.validity,
+					"inline": true
+				  },
+				  {
+					"name": "Ranked",
+					"value": replay.ranked.toString(),
+					"inline": true
+				  },
+				  {
+					"name": "Map info",
+					"value": replay.mapName+" ["+replay.mapVersion+"] ("+replay.mapSize+")"
+				  }
+				]
+			  }
+			}
+			
+			const keys = Object.keys(replay.players);
+			for (let i = 0; i < keys.length; i++){
+				const id = keys[i];
+				const p = replay.players[id];
+				
+				let rating = "0";
+				
+				if (replay.technicalGameType == "ladder1v1"){
+					rating = "L"+p.ladderRating;
+				}
+				else{
+					rating = "G"+p.globalRating;
+				}
+				
+				let pNameString = ""+utils.getFaction(p.faction).substring(0, 1).toUpperCase()+" - "+p.name+" ["+rating+"]";
+				
+				let value = "";
+				
+				if (!replay.validity.includes("FFA")){
+					value += "Team "+p.team+"\n";
+				}
+				
+				value += "Score: "+p.score+"\n";
+				if (p.ai){
+					pNameString = "AI "+pNameString;
+				}
+				
+				embedMes["embed"].fields.push({"name":pNameString, "value": value, "inline": true});
+				
+			}
+			
+			callback(embedMes);
+			return;
+		}
+		else{
+			callback("Replay not found.");
+			return;
+		}
+	  
+   });
 }
 
-function sendMessage(channel, msgString){
+function fetchLadderPool(apiUrl, callback){
+					
+	utils.httpsFetch(apiUrl+'ladder1v1Map?include=mapVersion.map', function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
+		}
+		
+		const data = JSON.parse(d);
+		if (data != undefined && data.included != undefined){
+			
+			let maps = {};
+			const inc = data.included;
+				
+			for (let i = 0; i < inc.length; i++){
+				let thisData = inc[i];
+				let id = "";
+				switch (thisData.type){
+					default:
+						continue;
+						break;
+						
+					case "mapVersion":
+						id = thisData.relationships.map.data.id;
+						if (maps[id] == undefined){
+							maps[id] = {};
+						}
+						
+						maps[id].imgUrl = thisData.attributes.thumbnailUrlSmall.replace(/( )/g, "%20");
+						maps[id].mapVersion = thisData.attributes.version;
+						maps[id].mapSize = ((thisData.attributes.width/512)*10)+"x"+((thisData.attributes.height/512)*10)+" km";
+						break;
+						
+					case "map":
+						id = thisData.id;
+						if (maps[id] == undefined){
+							maps[id] = {};
+						}
+						maps[id].mapName = thisData.attributes.displayName;
+						
+						break;
+				}
+			}
+			
+			let embedMes = {
+				  "embed": {
+					"title": "**Ladder maps pool**",
+					"color": 0xFF0000,
+					"thumbnail": {
+					  "url": maps[Object.keys(maps)[0]].imgUrl
+					},
+					"fields": []
+				  }
+				}
+				
+				const keys = Object.keys(maps);
+				for (let i = 0; i < keys.length; i++){
+					const id = keys[i];
+					const m = maps[id];
+					
+					embedMes["embed"].fields.push({
+						"name": m.mapName+" ["+m.mapVersion+"]",
+						"value": m.mapSize,
+						"inline": true
+					});
+				}
+				
+				callback(embedMes);
+				return;
+			
+		}
+		else{
+			callback("Could not retrieve map pool.");
+			return;
+		}
+		  
+	});
+}
+function escapeArguments(str){
+	str = str.replace(/\\/g, "\\\\")
+   .replace(/\$/g, "\\$")
+   .replace(/'/g, "\\'")
+   .replace(/"/g, "\\\"");
+   return str;
+}
+function fetchWikiArticle(searchTerm, wikiUrl, callback){
+	
+	utils.httpsFetch(wikiUrl+'api.php?action=query&list=search&srsearch='+searchTerm+'&format=json&srlimit=1&srwhat=title', function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
+		}
+		
+		const data = JSON.parse(d);
+		if (data != undefined && data.query != undefined && data.query.searchinfo.totalhits > 0){
+			
+			const hit = data.query.search[0]; //For multiple results, will have to tweak this in a for loop.
+			
+			let embedMes = {
+				"content": "Results for search term \""+searchTerm+"\" :",
+				  "embed": {
+					"title": "**Click here to access wiki page**",
+					"url": wikiUrl+"index.php?title="+hit.title.replace(/( )/g, "%20")+"",
+					"color": 0xFF0000,
+					"thumbnail": {
+					  "url": wikiUrl+"images/icon.png"
+					},
+					"fields": [
+					  {
+						"name": ""+hit.title+"",
+						"value": hit.snippet.replace(/<{1}[^<>]{1,}>{1}/g,"")
+					  }
+					]
+				  }
+				};
+			
+			callback(embedMes);
+		}
+		
+		else{
+			callback("No results for the term \""+searchTerm+"\"");
+			return;
+		}
+		
+	});
+}
+function fetchUnitData(unitID, dbAddress, callback){
+	//Character escaping
+   const webAddress = dbAddress;
+	
+	utils.httpFetch(webAddress+'api.php?searchunit='+unitID+'', function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
+		}
+		
+		const data = JSON.parse(d);
+		
+		if (data != undefined && data.BlueprintType != undefined && data.BlueprintType == "UnitBlueprint"){
+			
+			////NAME FORMAT
+			let cuteName = '';
+			if (data.General.UnitName != undefined){
+				cuteName = '"'+data.General.UnitName.replace(/<{1}[^<>]{1,}>{1}/g,"")+'" ';
+			}
+			
+			
+			let unit ={
+				id: data.Id,
+				name: ''+cuteName+''+data.Description.replace(/<{1}[^<>]{1,}>{1}/g,""),
+				previewUrl: webAddress+'res/img/preview/'+data.Id+'.png',
+				strategicUrl: webAddress+'res/img/strategic/'+data.StrategicIconName+'_rest.png',
+				faction: data.General.FactionName,
+			}
+			
+			let embedMes = {
+				  "embed": {
+					"title": "**Click here to open unitDB**",
+					"description":""+unit.faction+" - "+unit.id, // <:"+(unit.faction.toLowerCase())+":"+message.client.emojis.findKey("name",(unit.faction.toLowerCase()))+">
+					"url": webAddress+'index.php?id='+unit.id,
+					"color": utils.getFactionColor(unit.faction),
+					"thumbnail": {
+					  "url": unit.previewUrl
+					},
+					"author": {
+					  "name": unit.name,
+					  "url": webAddress+'index.php?id='+unit.id,
+						"icon_url": unit.strategicUrl
+					},
+					"fields": [
+					]
+				  }
+				}
+			callback(embedMes);
+			
+		}
+		else{
+			callback("Unit not found");
+			return;
+		}
+	});
+}
+
+/// Reacts with a little W A I T on the last command that couldn't be fired because of cooldown
+function animateCooldown(message, cooldown){
+	if (lastAnimatedMessage.react != undefined){
+		lastAnimatedMessage.clearReactions();
+	}
+	message.react("🇼")
+	.then(() => message.react("🇦"))
+	.then(() => message.react("🇮"))
+	.then(() => message.react("🇹"));
+	lastAnimatedMessage = message;
+}
+
+/// Sends message to the channel
+function sendMessage(channel, msgContent){
+	utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD");
 	if (Number.isInteger(channel)){
 		channel = client.channels.get(channel);
 	}
-	return channel.send(msgString);
-}
-function startCooldown(settings, cooldownObject, id){
-	cooldownObject[id] = settings.cooldown;
-	setTimeout(function(){cooldownObject[id]--;}, 1000); 
+	return channel.send(msgContent);
 }
 
+/// Replies to existing message
+function replyToMessage(message, msgContent){
+	utils.log("Sent as a reply message "+msgContent+" on "+message.toString()+"", "DD");
+	return message.reply(msgContent);
+}
+
+/// Starts the cooldown timer
+function startCooldown(settings, cooldownObject, id){
+	if (cooldownObject == null){
+		cooldownObject = {};
+	}
+	
+	const maxCd = settings.cooldown;
+	cooldownObject[id] = maxCd;
+	
+	setTimeout(function(){
+		refreshCooldown(id, cooldownObject);
+	}, 1000); 
+}
+
+// Actualizes the cooldown timer
+function refreshCooldown(id, cooldownObject){
+	
+	cooldownObject[id]--;
+	if (cooldownObject[id] > 0){
+		setTimeout(function(){
+			refreshCooldown(id, cooldownObject);
+		}, 1000); 
+	}
+}
 
 
 module.exports = {
@@ -165,8 +1013,8 @@ module.exports = {
 		return addToReceivers(receiverChannel);
 	},
    startCooldown: 
-	function(settings, cooldownObject, id){
-		return startCooldown(settings, cooldownObject, id);
+	function(settings, cooldownObject, guildId){
+		return startCooldown(settings, cooldownObject, guildId);
 	},
    sendMessage: 
 	function(channel, msgString){
@@ -174,7 +1022,7 @@ module.exports = {
 	},
    executeCommand: 
 	function(command, arguments, cooldown, message, settings, utils, callback){
-		return startCooldown(command, arguments, cooldown, message, settings, utils, callback);
+		return executeCommand(command, arguments, cooldown, message, settings, utils, callback);
 	},
    onPrefixFound: 
 	function(message, settings, utils, callback){

@@ -1,8 +1,11 @@
 //EXPORTS AT EOF
 const settings = require("../configuration/settings.json");
 const trackfile = "./_private/tracker.txt";
+const logPath = "./_private/logs";
 const fs = require("fs");
 const mkdirp = require("mkdirp");
+const https = require('https');
+const http = require('http');
 
 ////////////////
 /// LOG FUNCTION
@@ -40,14 +43,14 @@ function log(message, type="--", guild=undefined){
 			if (guild != undefined && guild.id != undefined){
 				id = guild.id+'-'+makeLong(guildName, 8);
 			}
-			const path = "./logs/"+id+"/";
+			const path = logPath+"/"+id+"/";
 			const fullPath = path+(guildName)+"."+time(true)+".log";
 			
 			if (!fs.existsSync(path)){
 				mkdirp.sync(path);
 			}
 			if (!fs.existsSync(fullPath)){
-				fs.writeFileSync(fullPath, "- QAIx Log Start -", {"encoding":'utf8'});
+				fs.writeFileSync(fullPath, "- Dostya Log Start -", {"encoding":'utf8'});
 			}
 			let logContent = fs.readFileSync(fullPath);			
 			const logString = "["+time()+"] ["+makeLong(guildName,logGuildNameLength*2)+"] ["+type+"] "+message;
@@ -59,7 +62,7 @@ function log(message, type="--", guild=undefined){
 	}
 }
 
-function replyToId(str_reply_user){
+function getIdFromString(str_reply_user){
 	
 	let thisUserId = str_reply_user.substring(2, str_reply_user.length-1);
 	if (thisUserId.charAt(0) == "!"){
@@ -75,7 +78,109 @@ function track(guildMember){
 	let trackerContent = fs.readFileSync(trackfile);
 	fs.writeFileSync(trackfile, trackerContent+"\r\n["+time()+"] "+guildMember.guild.name+" - "+guildMember.id+" - "+guildMember.user.username, {"encoding":'utf8'});
 }
+function httpFetch(address, function_callback){
+	
+	http.get(address, (res) => {
+		//console.log('statusCode:', res.statusCode);
+		//console.log('headers:', res.headers);
+		let ok = false;
+		switch (res.statusCode){
+			default:
+				ok = true;
+				break;
+				
+			case 400:
+				log("["+address+"] ==> Malformed request ?! 400 - doing nothing.", "WW");
+				break;
+				
+			case 403:
+				log("["+address+"] ==> Access forbidden ?! 403 - doing nothing.", "WW");
+				break;
+				
+			case 404:
+				log("["+address+"] ==> Server not found ?! 404 - doing nothing.", "WW");
+				break;
+				
+			case 500:
+				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
+				break;
+		}
+		
+		if (ok){
 
+			let d = '';
+
+			res.setEncoding('utf8');
+
+			res.on('readable', function () {
+				const chunk = this.read() || '';
+
+				d += chunk;
+			});
+
+			res.on('end', function () { function_callback(d); });
+			
+		}
+		else{
+			function_callback(res.statusCode);
+		}
+		
+	}).on('error', (e) => {
+		log("["+address+"] ==> HTTP request returned following error : ["+(e)+"]. Doing nothing.", "WW");
+	});
+}
+function httpsFetch(address, function_callback){
+   
+   //Single HTTPS-GET should get us everything we need
+   
+	https.get(address, (res) => {
+		
+		let ok = false;
+		switch (res.statusCode){
+			default:
+				ok = true;
+				break;
+				
+			case 400:
+				log("["+address+"] ==> Malformed request ?! 400 - doing nothing.", "WW");
+				break;
+				
+			case 403:
+				log("["+address+"] ==> Access forbidden ?! 403 - doing nothing.", "WW");
+				break;
+				
+			case 404:
+				log("["+address+"] ==> Server not found ?! 404 - doing nothing.", "WW");
+				break;
+				
+			case 500:
+				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
+				break;
+		}
+		
+		if (ok){
+
+			let d = '';
+
+			res.setEncoding('utf8');
+
+			res.on('readable', function () {
+				const chunk = this.read() || '';
+
+				d += chunk;
+			});
+
+			res.on('end', function () { function_callback(d); });
+			
+		}
+		else{
+			function_callback(res.statusCode);
+		}
+		
+	}).on('error', (e) => {
+		log("HTTPS request returned following error : ["+(e)+"]. Doing nothing.", "WW");
+	});
+}
 
 //Utils i'll comment later
 function padZero(str, len) {
@@ -146,7 +251,76 @@ function invertColor(hex) {
 	// pad each with zeros and return
 	return '#' + padZero(r) + padZero(g) + padZero(b);
 }
+function getFaction(int_fac){
+	switch (int_fac){
+		default:
+			return "";
+			break;
+			
+		case 1:
+			return "uef"
+			break;
+		case 2:
+			return "aeon"
+			break;
+		case 3:
+			return "cybran"
+			break;
+		case 4:
+			return "seraphim"
+			break;
+		case 5:
+			return "random"
+			break;
+	}
+}
+function getFactionColor(str_fac){
+	
+	switch (str_fac.toLowerCase()){
+			
+		case "uef":
+			return 0x0000FF;
+			break;
+		case "aeon":
+			return 0x00FF00;
+			break;
+		case "cybran":
+			return 0xFF0000;
+			break;
+		case "seraphim":
+			return 0xFFFF00;
+			break;
+		case "nomad":
+			return 0xFF9900;
+			break;
+	}
+	
+}
 
+function formattedDate(d = new Date) {
+  let month = String(d.getMonth() + 1);
+  let day = String(d.getDate());
+  const year = String(d.getFullYear());
+
+  if (month.length < 2) month = '0' + month;
+  if (day.length < 2) day = '0' + day;
+
+  return `${month}/${day}/${year}`;
+}
+
+function isAlphanumeric(str){
+	if( /[^a-zA-Z0-9]/.test( str ) ) {
+	   return false;
+	}
+	return true;     
+}
+
+function isNumeric(str){
+	if( /[^0-9]/.test( str ) ) {
+	   return false;
+	}
+	return true;     
+}
 //EXPORTS FOR SHARED USE
 module.exports = {
    log: 
@@ -156,14 +330,45 @@ module.exports = {
 		}
 	},
 	
-	replyToId:
+	getIdFromString:
 	function (str){
-		return replyToId(str);
+		return getIdFromString(str);
 	},
 	
 	track:
 	function (gm){
 		return track(gm);
-	}
+	},
+	
+	httpFetch:
+	function (address, callback){
+		return httpFetch(address, callback);
+	},
+	
+	httpsFetch:
+	function (address, callback){
+		return httpsFetch(address, callback);
+	},
+	getFactionColor:
+	function (str){
+		return getFactionColor(str);
+	},
+	getFaction:
+	function (integer){
+		return getFaction(integer);
+	},
+	isAlphanumeric:
+	function (str){
+		return isAlphanumeric(str);
+	},
+	isNumeric:
+	function (str){
+		return isNumeric(str);
+	},
+	formattedDate:
+	function (date){
+		return formattedDate(date);
+	},
+	trackfile:trackfile
 	
 }

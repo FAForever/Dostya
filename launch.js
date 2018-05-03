@@ -70,10 +70,40 @@ client.on('message', message => {
 		
 		behavior.executeCommand(command, arguments, currentCooldown[message.guild.id], message, settings, utils, function(state, err){
 			
-			if (state === 0){
-				behavior.startCooldown(settings, currentCooldown, message.guild.id);
-			}
+			utils.log("["+message.author.username+"] fired ["+command+"]", "!!", message.guild);
 			
+			switch(state){
+				
+				default:
+					utils.log("Invalid command state - Please check command ["+command+"] with argument ["+argument+"]", "><", message.guild);
+					break;
+				
+				/// 0 means the command executed gracefully
+				case 0:
+					utils.log("EOI with "+message.author.username+"", "OK", message.guild);
+					behavior.startCooldown(settings, currentCooldown, message.guild.id);
+					break;
+				
+				/// 1 means the command could be executed because of cooldown
+				case 1:
+					utils.log("On cooldown, ignoring ["+command+"]", "--", message.guild);
+					break;
+				
+				/// 2 is command not found
+				case 2:
+					utils.log("Could not find ["+command+"]", "--", message.guild);
+					break;
+				
+				/// 3 is command misuse
+				case 3:
+					utils.log("Misuse of command ["+command+"]", "--", message.guild);
+					break;
+				
+				/// 4 is command forbidden
+				case 4:
+					utils.log("Command forbidden in current state ["+command+"]", "--", message.guild);
+					break;
+			}
 		});
 		
 	});
@@ -85,10 +115,10 @@ client.on('message', message => {
 	if (talkingToMe){	//It does => Execing command
 		  //Exit if on cooldown
 		if (onCooldown[message.guild.id]){
-				message.react("🇼")
-				.then(() => message.react("🇦"))
-				.then(() => message.react("🇮"))
-				.then(() => message.react("🇹"));
+				message.react("ðŸ‡¼")
+				.then(() => message.react("ðŸ‡¦"))
+				.then(() => message.react("ðŸ‡®"))
+				.then(() => message.react("ðŸ‡¹"));
 	            utils.log('On cooldown, ignoring ['+message.content+']', '--', message.guild);
 	            return;
 	        }
@@ -151,7 +181,7 @@ function refreshReceivers(client){
 		const channel = guild.channels.find("name", "aeolus");
 		if (channel != null && channel.type == "text"){
 			behavior.addToReceivers(channel);
-			utils.log("Added "+guild.name+">>"+channel.name+" to receivers");
+			utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>");
 		}
 	}
 }
