@@ -1,0 +1,29 @@
+{
+  "name": "dostya",
+  "version": "1.1.2",
+  "description": "Official Discord FAF javascript bot",
+  "main": "launch.js",
+  "dependencies": {
+    "discord.js": "^11.3.2",
+    "fs": "^0.0.1-security",
+    "funsocietyirc-client": "^0.1.12",
+    "http": "^0.0.0",
+    "https": "^1.0.0",
+    "mkdirp": "^0.5.1",
+    "sqlite3": "^4.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "!alive"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FAForever/Dostya.git"
+  },
+  "author": "Rackover",
+  "license": "Beerware",
+  "bugs": {
+    "url": "https://github.com/FAForever/Dostya/issues"
+  },
+  "homepage": "https://github.com/FAForever/Dostya#readme"
+}
