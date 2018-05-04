@@ -7,6 +7,21 @@ Dostya is a Discord utility bot written in Javascript using the Discord.JS libra
 
 The purpose of the bot is to provide easy access to basic FAForever services through commands. It is intended to work on the FAForever official discord, but can work anywere else aswell.
 
+## Commands
+|       Usage         |Effect                         |
+|----------------|-------------------------------|
+|`alive/respond`| Test command to check if the bot is running |
+|`help`| PMs a link to this page to the user|
+|`unit <unitID>`|Returns an embed preview of the unit and link to the unitDB page          |
+|`wiki <searchTerms>`|Performs a search on the faforever wiki and returns the first result     |
+|`pool/ladderpool/ladder`          |Returns the current map pool for the 1v1 ladder|
+|`replay <replayID>`|Returns a short résumé and a link to the replay given|
+|`lastreplay <fafPlayerName>`|Returns the `!replay` of the last game played by the given user |
+|`clan <fafClanTag/fafClanName>`|Returns information about the clan given     |
+|`searchplayer <searchTerms>`| Returns a list of users whose username corresponds to the search term. Supports wildcard.   |
+|`player/ratings <fafPlayerName>`| Returns an embed preview of the player's avatar and information about the player |
+|`sendtracker/tracker`| PMs the tracker file to the user |
+
 ## Setting up the bot
 The bot runs using NodeJS. If you do not have it installed already, fire the following command :
 - `apt-get install nodejs`
@@ -53,18 +68,3 @@ Inside the `configuration/` folder you can find a `settings.json` that you can m
 ```
 ### Run the bot
 Fire `node init_bot.js` and you should be good to go.
-
-## Commands
-|       Usage         |Effect                         |
-|----------------|-------------------------------|
-|`alive/respond`| Test command to check if the bot is running |
-|`help`| PMs a link to this page to the user|
-|`unit <unitID>`|Returns an embed preview of the unit and link to the unitDB page          |
-|`wiki <searchTerms>`|Performs a search on the faforever wiki and returns the first result     |
-|`pool/ladderpool/ladder`          |Returns the current map pool for the 1v1 ladder|
-|`replay <replayID>`|Returns a short résumé and a link to the replay given|
-|`lastreplay <fafPlayerName>`|Returns the `!replay` of the last game played by the given user |
-|`clan <fafClanTag/fafClanName>`|Returns information about the clan given     |
-|`searchplayer <searchTerms>`| Returns a list of users whose username corresponds to the search term. Supports wildcard.   |
-|`player/ratings <fafPlayerName>`| Returns an embed preview of the player's avatar and information about the player |
-|`sendtracker/tracker`| PMs the tracker file to the user |
