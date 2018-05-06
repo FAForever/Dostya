@@ -29,21 +29,27 @@ ircUplink.client.addListener('message#aeolus', function (author, message) {
 function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
 	
 	const cooldownWhitelist = ["respond", "alive", "unit", "searchunit", "wiki", "pool", "ladderpool", "ladder", "mappool", "ladder", "replay", "lastreplay", "clan", "player", "ratings", "searchplayer", "restrictions"];
-	if (cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
+	const developer = isDeveloper(message.author, settings);
+	
+	if (!developer &&  settings["dev-only-mode"]){
+		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!", message.guild);
+		callback(4);
+	}
+	else if (!developer && cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
 		/// Animates cooldown
 		animateCooldown(message, cooldown);
 		callback(1);
 	}
-	else if (!isDeveloper(message.author, settings) && settings["dev-only-mode"]){
-		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!");
+	else if (!developer && isDeveloperCommand(command, settings)){
+		utils.log(message.author.username+" tried to fire a developer command without being dev", "!!", message.guild);
 		callback(4);
 	}
-	else if (!isDeveloper(message.author, settings) && isRestrictedCommand(command, message.guild) && !isModerator(message.member, message.guild)){
-		utils.log(message.author.username+" tried to fire a restricted command", "!!");
+	else if (!developer && isRestrictedCommand(command, message.guild) && !isModerator(message.member, message.guild)){
+		utils.log(message.author.username+" tried to fire a restricted command", "!!", message.guild);
 		callback(4);
 	}
-	else if (!isDeveloper(message.author, settings) && isBlacklistedUser(message.author, message.guild)){
-		utils.log(message.author.username+" tried to fire a command, but is blacklisted", "!!");
+	else if (!developer && isBlacklistedUser(message.author, message.guild)){
+		utils.log(message.author.username+" tried to fire a command, but is blacklisted", "!!", message.guild);
 		callback(4);
 	}
 	else{
@@ -222,10 +228,19 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 ///
 ///////////////
 
+/// Checks if the function is only for developers
+function isDeveloperCommand(command, settings){
+	const devCmds = settings['dev-only-commands'];
+	if (devCmds.indexOf(command) > -1){
+		return true;
+	}
+	return false;
+}
+
 /// Checks if the user is a moderator on this guild
 function isDeveloper(author, settings){
 	const devs = settings.devs;
-	if (devs.indexOf(author.id) > -1){
+	if (devs.indexOf(author.id+"") > -1){
 		return true;
 	}
 	return false;
@@ -761,14 +776,8 @@ function onPrefixFound(message, settings, utils, callback){
 			
 			command = command.toLowerCase();
 			
-			const aId = parseInt(message.author.id)		
-			if (settings["dev-only-commands"].indexOf(command) > -1 && settings["devs"].indexOf(aId) < 0){
-				utils.log(message.author.username+" tried to use "+command+"["+arguments+"], but is not dev. Doing nothing.", "><", message.guild);
-			}
-			else{
-				callback(command, arguments);
-				return;
-			}
+			callback(command, arguments);
+				
 		}
 	}
 }
