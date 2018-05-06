@@ -1168,12 +1168,19 @@ function animateCooldown(message, cooldown){
 
 /// Sends message to the channel
 function sendMessage(channel, msgContent){
-	const myPermissions = channel.permissionsFor(channel.guild.me);
-	if (myPermissions.has('SEND_MESSAGES')){
+	let canSend = true;
+	
+	if (Number.isInteger(channel)){
+		channel = client.channels.get(channel);
+	}
+	
+	if (channel instanceof Discord.Channel){
+		const myPermissions = channel.permissionsFor(channel.guild.me);
+		canSend = myPermissions.has('SEND_MESSAGES');
+	}
+	
+	if (canSend){
 		utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD", channel.guild);
-		if (Number.isInteger(channel)){
-			channel = client.channels.get(channel);
-		}
 		return channel.send(msgContent);
 	}
 	return utils.emptyPromise();
