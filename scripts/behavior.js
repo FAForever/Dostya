@@ -16,7 +16,8 @@ let receivers = [];
 let lastAnimatedMessage = {};
 
 /// On irc message received, send from IRC
-ircUplink.client.addListener('message', function (author, to, message) {
+ircUplink.client.addListener('message#aeolus', function (author, message) {
+	utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
 	sendFromIrc(author, message);
 });
 
@@ -27,14 +28,22 @@ ircUplink.client.addListener('message', function (author, to, message) {
 ///
 function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
 	
-	const cooldownWhitelist = ["respond", "alive", "unit", "searchunit", "wiki", "pool", "ladderpool", "ladder", "replay", "lastreplay", "clan", "player", "ratings", "searchplayer"];
+	const cooldownWhitelist = ["respond", "alive", "unit", "searchunit", "wiki", "pool", "ladderpool", "ladder", "mappool", "ladder", "replay", "lastreplay", "clan", "player", "ratings", "searchplayer", "restrictions"];
 	if (cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
 		/// Animates cooldown
 		animateCooldown(message, cooldown);
 		callback(1);
 	}
-	else if (settings["dev-only-mode"] && settings["devs"].indexOf(message.author.id) < 0){
+	else if (!isDeveloper(message.author, settings) && settings["dev-only-mode"]){
 		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!");
+		callback(4);
+	}
+	else if (!isDeveloper(message.author, settings) && isRestrictedCommand(command, message.guild) && !isModerator(message.member, message.guild)){
+		utils.log(message.author.username+" tried to fire a restricted command", "!!");
+		callback(4);
+	}
+	else if (!isDeveloper(message.author, settings) && isBlacklistedUser(message.author, message.guild)){
+		utils.log(message.author.username+" tried to fire a command, but is blacklisted", "!!");
 		callback(4);
 	}
 	else{
@@ -77,7 +86,8 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 			case "pool":
 			case "ladderpool":
 			case "ladder":
-				fetchLadderPool(settings.urls.api, function(content){
+			case "mappool":
+				fetchLadderPool(settings.urls.data, function(content){
 					sendMessage(message.channel, content)
 					.then(callback(0))
 				});
@@ -90,7 +100,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				arguments = escapeArguments(arguments);
-				fetchReplay(command, arguments, settings.urls.api, function(content){
+				fetchReplay(command, arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
 					.then(callback(0))
 				});
@@ -102,7 +112,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				arguments = escapeArguments(arguments);
-				fetchClan(arguments, settings.urls.api, function(content){
+				fetchClan(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
 					.then(callback(0))
 				});
@@ -115,7 +125,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				arguments = escapeArguments(arguments);
-				fetchPlayer(arguments, settings.urls.api, function(content){
+				fetchPlayer(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
 					.then(callback(0))
 				});
@@ -127,7 +137,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				arguments = escapeArguments(arguments);
-				fetchPlayerList(arguments, settings['player-search-limit'], settings.urls.api, function(content){
+				fetchPlayerList(arguments, settings['player-search-limit'], settings.urls.data, function(content){
 					sendMessage(message.channel, content)
 					.then(callback(0))
 				});
@@ -140,8 +150,69 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				
 			case "sendtracker":
 			case "tracker":
-				sendTrackerFile(message.author)
-				.then(callback(0));
+				sendTrackerFile(message.author, message.guild)
+					.then(callback(0));
+				break;
+				
+			case "logs":
+				sendBotLogs(message.author)
+					.then(callback(0));
+				break;
+				
+			case "def":		/// !def array mods @Moderators,@Admins
+			case "define":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				const args = arguments.split(" ");
+				if (args.length < 3){
+					callback(3)
+				}
+				defineSpecific(message, args[0], args[1], args[2])
+					.then(callback(0));
+				break;
+				
+			case "restrict":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				restrictCommand(message.author, arguments, message.guild)
+					.then(callback(0));
+				break;
+				
+			case "unrestrict":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				unrestrictCommand(message.author, arguments, message.guild)
+					.then(callback(0));
+				break;
+				
+			case "restrictions":
+				sendRestrictions(message.author, message.guild)
+					.then(callback(0));
+				break;
+				
+			case "blacklist":
+				if (arguments == null){
+					sendBlacklist(message.author, message.guild)
+						.then(callback(0));
+					break;
+				}
+				blacklistUser(message.author, arguments, message.guild)
+					.then(callback(0));
+				break;
+				
+			case "unblacklist":
+				if (arguments == null){
+					callback(3);
+					break;
+				}
+				unblacklistUser(message.author, arguments, message.guild)
+					.then(callback(0));
 				break;
 		}
 	}
@@ -151,11 +222,140 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 ///
 ///////////////
 
+/// Checks if the user is a moderator on this guild
+function isDeveloper(author, settings){
+	const devs = settings.devs;
+	if (devs.indexOf(author.id) > -1){
+		return true;
+	}
+	return false;
+}
+
+/// PMs the restriction list to the user
+function sendRestrictions(author, guild){
+	let specs = utils.getSpecifics(guild);
+	return sendMessage(author, "Current restrictions : `"+specs.restricted.join('`, `')+"`");
+}
+
+/// PMs the blacklist to the user
+function sendBlacklist(author, guild){
+	let specs = utils.getSpecifics(guild);
+	return sendMessage(author, "Current blacklist : "+specs.blacklist.join(','));
+}
+
+/// Adds user to the blacklist
+function blacklistUser(author, user, guild){
+	let specs = utils.getSpecifics(guild);
+	if (!isBlacklistedUser(user, guild)){
+		specs.blacklist.push(user);
+	}
+	utils.writeSpecifics(guild, specs);
+	return sendBlacklist(author, guild);
+}
+
+/// Removes user from the blacklist
+function unblacklistUser(author, user, guild){
+	let specs = utils.getSpecifics(guild);
+	if (isBlacklistedUser(user, guild)){
+		const index = specs.blacklist.indexOf(user);
+		specs.blacklist.splice(index, 1);
+	}
+	utils.writeSpecifics(guild, specs);
+	return sendBlacklist(author, guild);
+}
+
+/// Checks if the user is blacklisted on this guild
+function isBlacklistedUser(author, guild){
+	const specs = utils.getSpecifics(guild);
+	for (let i = 0; i < specs.blacklist.length; i++){
+		const thisBlacklistId = specs.blacklist[i];
+		if (thisBlacklistId.search(author.id) > -1){
+			return true;
+		}
+	}
+	return false;
+}
+
+/// Checks if the user is a moderator on this guild
+function isModerator(member, guild){
+	const specs = utils.getSpecifics(guild);
+	for (let i = 0; i < specs.mods.length; i++){
+		const thisModId = specs.mods[i];
+		const roles = Object.keys(member.roles);
+		for (let j = 0; j < roles.length; j++){
+			if (thisModId.search(role.id) > -1){
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/// Checks if a command has been restricted in that guild
+function isRestrictedCommand(str_command, guild){
+	const specs = utils.getSpecifics(guild);
+	if (specs.restricted.indexOf(str_command) > -1){
+		return true;
+	}
+	return false;
+}
+
+/// Restricts a command on this guild - only mods will be able to use it
+function restrictCommand(author, str_command, guild){
+	let specs = utils.getSpecifics(guild);
+	if (!isRestrictedCommand(str_command, guild)){
+		specs.restricted.push(str_command);
+	}
+	utils.writeSpecifics(guild, specs);
+	return sendRestrictions(author, guild);
+}
+
+/// Deletes a restriction
+function unrestrictCommand(author, str_command, guild){
+	let specs = utils.getSpecifics(guild);
+	if (isRestrictedCommand(str_command, guild)){
+		const index = specs.restricted.indexOf(str_command);
+		specs.restricted.splice(index, 1);
+	}
+	utils.writeSpecifics(guild, specs);
+	return sendRestrictions(author, guild);
+}
+
+/// Defines a Specifics settings
+function defineSpecific(message, property, type, data){
+	let specifics = utils.getSpecifics(message.guild);
+	switch (type){
+		case "array":
+			specifics[property] = data.split(',');
+			break;
+	}
+	utils.writeSpecifics(message.guild, specifics);
+	return sendMessage(message.author, "`"+message.guild.id+'.'+property+' set to '+data+'`');
+}
+
 /// Send the tracker file to the users on demand
-function sendTrackerFile(author){
-	if (fs.existsSync(utils.trackfile)){
+function sendTrackerFile(author, guild){
+	const trackerFile = utils.getTrackerFile(guild);
+	if (fs.existsSync(trackerFile)){
 		utils.log("Sent trackerfile to "+author.username+"", "<<");
-		return author.send({ files: [new Discord.Attachment(utils.trackfile)] });
+		return author.send({ files: [new Discord.Attachment(trackerFile)] });
+	}
+	else{
+		utils.log("No trackerfile to send to "+author.username+"", "<<");
+		return sendMessage(author, "Trackerfile is empty or does not exist.");
+	}
+}	
+
+/// Send the log file to the user
+function sendBotLogs(author){
+	const logFile = utils.getCurrentLogPath();
+	if (fs.existsSync(logFile)){
+		utils.log("Sent log file to "+author.username+"", "<<");
+		return author.send({ files: [new Discord.Attachment(logFile)] });
+	}
+	else{
+		utils.log("No log file to send to "+author.username+"", "<<");
+		return sendMessage(author, "Logs are empty or do not exist.");
 	}
 }	
 
@@ -968,17 +1168,25 @@ function animateCooldown(message, cooldown){
 
 /// Sends message to the channel
 function sendMessage(channel, msgContent){
-	utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD");
-	if (Number.isInteger(channel)){
-		channel = client.channels.get(channel);
+	const myPermissions = channel.permissionsFor(channel.guild.me);
+	if (myPermissions.has('SEND_MESSAGES')){
+		utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD", channel.guild);
+		if (Number.isInteger(channel)){
+			channel = client.channels.get(channel);
+		}
+		return channel.send(msgContent);
 	}
-	return channel.send(msgContent);
+	return utils.emptyPromise();
 }
 
 /// Replies to existing message
 function replyToMessage(message, msgContent){
-	utils.log("Sent as a reply message "+msgContent+" on "+message.toString()+"", "DD");
-	return message.reply(msgContent);
+	const myPermissions = message.channel.permissionsFor(message.guild.me);
+	if (myPermissions.has('SEND_MESSAGES')){
+		utils.log("Sent as a reply message "+msgContent+" on "+message.toString()+"", "DD", message.guild);
+		return message.reply(msgContent);
+	}
+	return utils.emptyPromise();
 }
 
 /// Starts the cooldown timer

@@ -1,18 +1,24 @@
 {
-  "debug-mode": false,
-  "dev-only-mode": false,
-  "dev-only-commands": ["addpoints", "setpoints"],
-  "devs": [142367571256147968],
-  "prefixes": ["!", "Dostya! "],
-  "write-logs": true,
-  "cooldown":30,
-  "player-search-limit":5,
-  "aliases": {
-	"#": "!replay "
-  },
-  "urls":{
-	"unitDB":"http://direct.faforever.com/faf/unitsDB/",
-	"wiki":"https://wiki.faforever.com/",
-	"api":"https://api.faforever.com/data/"
-  }
+	"debug-mode": false,
+	"dev-only-mode": false,
+	"dev-only-commands": ["def", "logs"],
+	"devs": ["142367571256147968"],
+	"prefixes": ["!", "Dostya! "],
+	"write-logs": true,
+	"cooldown": 30,
+	"player-search-limit": 5,
+	"aliases": {
+		"#": "!replay "
+	},
+	"urls": {
+		"unitDB": "http://direct.faforever.com/faf/unitsDB/",
+		"wiki": "https://wiki.faforever.com/",
+		"api": "https://api.faforever.com/",
+		"data": "https://api.faforever.com/data/"
+	},
+	"default-specifics": {
+		"mods": [],
+		"blacklist": [],
+		"restricted": ["blacklist", "restrict", "unrestrict"]
+	}
 }

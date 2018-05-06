@@ -1,6 +1,6 @@
 //UTILS
 const utils = require('./utility.js');
-const fakeGuild = {name: 'IRC-AEOLUS', id: 'IRC-AEOLUS'};
+const fakeGuild = {name: 'IRC-AEOLUS', id: '0000'};
 const chan = "#aeolus";
 
 //INIT
@@ -34,6 +34,7 @@ client.addListener('kill', function (nick, reason, channels, message) {
 
 //Exports
 function sendIrcMessage(str){
+	utils.log("[TIRC] "+str, "++", fakeGuild);
 	client.say(chan, str);
 }
 
@@ -41,7 +42,8 @@ module.exports = {
 	sendIrcMessage: function(str){
 		sendIrcMessage(str);
 	},
-	client: client
+	client: client,
+	fakeGuild: fakeGuild
 }
 
 //Client.nick

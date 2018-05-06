@@ -7,7 +7,6 @@ const client = new Discord.Client();
 module.exports = {
    getChannel: function(str){	return client.channels.get(str);}
 }
-
 // Scripts
 const utils = require('./scripts/utility.js');
 const behavior = require('./scripts/behavior.js');
@@ -41,6 +40,7 @@ client.on('disconnect', () => {
 });
 
 client.on('guildCreate', guild =>{
+	utils.log('Dostya has been added to guild '+guild.name+'', '!!');
 	refreshReceivers(client);
 });
 

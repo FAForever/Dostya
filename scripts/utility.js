@@ -1,65 +1,75 @@
 //EXPORTS AT EOF
 const settings = require("../configuration/settings.json");
-const trackfile = "./_private/tracker.txt";
+const trackerfile = "tracker.txt";
+const specificsFile = "specifics.json";
 const logPath = "./_private/logs";
+const identitiesPath = "./_private/identities";
+
 const fs = require("fs");
 const mkdirp = require("mkdirp");
 const https = require('https');
 const http = require('http');
+
+const defaultSpecifics = settings["default-specifics"];
 
 ////////////////
 /// LOG FUNCTION
 ////////////////
 function log(message, type="--", guild=undefined){
 	const logGuildNameLength = 8;
-	var guildName = "";
+	let guildName = "";
 	let debug = false;
-	let debugChat = false;
+	
 	for (var i = 0; i< logGuildNameLength; i++){
 		guildName += " ";
 	}
 	if (guild != undefined){
-		guildName = guild.name;
+		if (typeof guild == "string"){
+			guildName = guild;
+		}
+		else{
+			guildName = guild.name;
+		}
 		const forbiddenChars = ["*", "/"];
-		
+	
 		for (let i = 0; i<forbiddenChars.length; i++){
 			while(guildName.indexOf(forbiddenChars[i]) > -1){
 				guildName = guildName.replace(forbiddenChars[i], ".");
 			}
 		}
-		//debug =	getSetting(guild, "debug-mode");
-		//debugChat = getSetting(guild, "debug-chat-mode");
 	}
 	guildColor = uniqueNumber(guildName, 7);
 	guildColorType = uniqueNumber(guildName, 2);
 	guildColor = 30 + 60*guildColorType + guildColor;
 	const consoleString = "\x1B[2m["+time()+"]\x1B[0m \x1B["+guildColor+"m["+makeLong(guildName,logGuildNameLength)+"]\x1B[0m \x1B[7m["+type+"]\x1B[27m "+message;
-	if (debug || type != 'DD'){
-		if (type != '++'){
-			console.log(consoleString);
-		}
-		if (guild /*&& getSetting(guild, "write-logs")*/){
-			let id = 0;
-			if (guild != undefined && guild.id != undefined){
-				id = guild.id+'-'+makeLong(guildName, 8);
-			}
-			const path = logPath+"/"+id+"/";
-			const fullPath = path+(guildName)+"."+time(true)+".log";
-			
-			if (!fs.existsSync(path)){
-				mkdirp.sync(path);
-			}
-			if (!fs.existsSync(fullPath)){
-				fs.writeFileSync(fullPath, "- Dostya Log Start -", {"encoding":'utf8'});
-			}
-			let logContent = fs.readFileSync(fullPath);			
-			const logString = "["+time()+"] ["+makeLong(guildName,logGuildNameLength*2)+"] ["+type+"] "+message;
-			fs.writeFileSync(fullPath, logContent+"\r\n"+logString, {"encoding":'utf8'});
-		}
+	if (type != '++' && (type !="DD" || settings['debug-log'])){
+		console.log(consoleString);
 	}
+	if (guild && settings["write-logs"]){
+		const fullPath = getCurrentLogPath();
+		const path = logPath+"/";
+		
+		if (!fs.existsSync(path)){
+			mkdirp.sync(path);
+		}
+		if (!fs.existsSync(fullPath)){
+			fs.writeFileSync(fullPath, "- Dostya Log Start -", {"encoding":'utf8'});
+		}
+		let logContent = fs.readFileSync(fullPath);			
+		const logString = "["+time()+"] ["+makeLong(guildName,logGuildNameLength*2)+"] ["+type+"] "+message;
+		fs.writeFileSync(fullPath, logContent+"\r\n"+logString, {"encoding":'utf8'});
+	}
+	/*
 	if (debugChat && consoleString){
 		globalChatStamp[guild] += "["+type+"] "+message+"\r\n";
 	}
+	*/
+}
+
+function getCurrentLogPath(){
+	const path = logPath+"/";
+	const fullPath = path+time(true)+".log";
+	return fullPath;
 }
 
 function getIdFromString(str_reply_user){
@@ -72,12 +82,51 @@ function getIdFromString(str_reply_user){
 }
 
 function track(guildMember){
-	if (!fs.existsSync(trackfile)){
-		fs.writeFileSync(trackfile, time()+" - Dostya user tracking start\r\n", {"encoding":'utf8'});
+	/// Initialization
+	
+	const fullPath = getTrackerFile(guildMember.guild);
+	
+	if (!fs.existsSync(fullPath)){
+		fs.writeFileSync(fullPath, time()+" - Dostya user tracking start\r\n", {"encoding":'utf8'});
 	}
-	let trackerContent = fs.readFileSync(trackfile);
-	fs.writeFileSync(trackfile, trackerContent+"\r\n["+time()+"] "+guildMember.guild.name+" - "+guildMember.id+" - "+guildMember.user.username, {"encoding":'utf8'});
+	let trackerContent = fs.readFileSync(fullPath);
+	fs.writeFileSync(fullPath, trackerContent+"\r\n["+time()+"] "+guildMember.id+" - "+guildMember.user.username, {"encoding":'utf8'});
 }
+
+function getTrackerFile(guild){
+	const guildPath = getIdentityPath(guild);
+	return guildPath+"/"+trackerfile;
+}
+function getSpecifics(guild){
+	const guildPath = getIdentityPath(guild);
+	if (!fs.existsSync(guildPath+"/"+specificsFile)){
+		writeSpecifics(guild, defaultSpecifics);
+	}
+	let specifics = JSON.parse(fs.readFileSync(guildPath+"/"+specificsFile));
+	const keys = Object.keys(defaultSpecifics);
+	for (let i = 0; i < keys.length; i++){
+		const key = keys[i];
+		if (specifics[key] == undefined){
+			specifics[key] = defaultSpecifics[key];
+		}
+	}
+	return specifics;
+}
+function writeSpecifics(guild, specifics){
+	const guildPath = getIdentityPath(guild);
+	fs.writeFileSync(guildPath+"/"+specificsFile, JSON.stringify(specifics));
+}
+function getIdentityPath(guild){
+	const guildPath = identitiesPath+"/"+guild.id;
+	if (!fs.existsSync(guildPath)){
+		mkdirp.sync(guildPath);
+	}
+	if (!fs.existsSync(guildPath+"/"+guild.name)){
+		fs.writeFile(guildPath+"/"+guild.name, guild.name, function(){});
+	}
+	return guildPath;
+}
+
 function httpFetch(address, function_callback){
 	
 	http.get(address, (res) => {
@@ -294,7 +343,29 @@ function getFactionColor(str_fac){
 			return 0xFF9900;
 			break;
 	}
-	
+}
+
+function emptyPromise(){
+	  let callbacks;
+	  let done = false;
+
+	  const p = new Promise((resolve, reject) => {
+		callbacks = { resolve, reject };
+	  })
+
+	  p.done = () => done;
+	  p.resolve = (val) => {
+		callbacks.resolve(val);
+		done = true;
+		return p;
+	  }
+	  p.reject = (val) => {
+		callbacks.reject(val);
+		done = true;
+		return p;
+	  }
+
+	  return p;
 }
 
 function formattedDate(d = new Date) {
@@ -369,6 +440,25 @@ module.exports = {
 	function (date){
 		return formattedDate(date);
 	},
-	trackfile:trackfile
+	getTrackerFile:
+	function (guild){
+		return (getTrackerFile(guild));
+	},
+	getSpecifics:
+	function (guild){
+		return (getSpecifics(guild));
+	},
+	writeSpecifics:
+	function (guild, specifics){
+		return (writeSpecifics(guild, specifics));
+	},
+	emptyPromise:
+	function (){
+		return emptyPromise();
+	},
+	getCurrentLogPath:
+	function (){
+		return getCurrentLogPath();
+	}
 	
 }

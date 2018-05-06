@@ -21,6 +21,22 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`searchplayer <searchTerms>`| Returns a list of users whose username corresponds to the search term. Supports wildcard.   |
 |`player/ratings <fafPlayerName>`| Returns an embed preview of the player's avatar and information about the player |
 |`sendtracker/tracker`| PMs the tracker file to the user |
+|`restrictions`| PMs the restricted commands list to the user |
+
+### Moderator commands
+|       Usage         |Effect                         |
+|----------------|-------------------------------|
+|`blacklist <@user>`| Prevents a user to fire any command on this guild|
+|`blacklist`| PMs the current blacklist of the bot|
+|`unblacklist <@user>`| Removes an user from the blacklist|
+|`restrict <command>`|Prevents anyone from firing the command, except Mods          |
+|`unrestrict <command>`|Remove the command from the restrictions list|
+
+### Developer commands
+|       Usage         |Effect                         |
+|----------------|-------------------------------|
+|`define/def <property> <datatype> <value>`| Defines a guild-specific setting for the bot|
+|`logs`| PMs the last bot logs to the user|
 
 ## Setting up the bot
 The bot runs using NodeJS. If you do not have it installed already, fire the following command :
@@ -48,23 +64,35 @@ Input the following :
 Inside the `configuration/` folder you can find a `settings.json` that you can modify for additional functionnality.
 ```
 {
-  "debug-mode": false/true | Increases the amount of messages in the console, 
-  "dev-only-mode": false/true | Only "dev" can fire commands, the bot ignore others,
-  "dev-only-commands": ["command1", "command2", ...] | Only the "dev" can fire these commands,
-  "devs": [MyDiscordId, OtherDiscordId, ...] | All those users will be considered as "dev",
-  "prefixes": ["!", "Dostya! "] | Answer to the following prefixes,
-  "write-logs": false/true | Write every console output to disk or not,
-  "aliases": { | Automatically replace the following prefixes with the according command
-	"#": "!replay "
-  },
-  "cooldown":30,	| Cooldown between each command
-  "player-search-limit":5,	| Maximum number of results for a player search
-  "urls":{	| Used by the online data fetching functions
-	"unitDB":"http://direct.faforever.com/faf/unitsDB/",
-	"wiki":"https://wiki.faforever.com/",
-	"api":"https://api.faforever.com/data/"
-  }
+	"debug-mode": false,
+	"dev-only-mode": false,
+	"dev-only-commands": ["def", "logs"],
+	"devs": ["142367571256147968"],
+	"prefixes": ["!", "Dostya! "],
+	"write-logs": true,
+	"cooldown": 30,
+	"player-search-limit": 5,
+	"aliases": {
+		"#": "!replay "
+	},
+	"urls": {
+		"unitDB": "http://direct.faforever.com/faf/unitsDB/",
+		"wiki": "https://wiki.faforever.com/",
+		"api": "https://api.faforever.com/",
+		"data": "https://api.faforever.com/data/"
+	},
+	"default-specifics": {
+		"mods": [],
+		"blacklist": [],
+		"restricted": ["blacklist", "restrict", "unrestrict"]
+	}
 }
 ```
 ### Run the bot
 Fire `node init_bot.js` and you should be good to go.
+
+### Setting up moderators for a specific guild
+- Add your Discord ID to the `devs` property inside the `configuration/` folder
+- Fire the bot
+- In the guild of your choice, fire `!def mods array @ModeratorRoleA,@ModeratorRoleB,...` to add a number of moderator roles of your choice.
+- The users with those roles will be able to fire moderator commands.
