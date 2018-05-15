@@ -10,7 +10,7 @@ RUN apk update && apk upgrade && apk add --no-cache bash git openssh sqlite
 # Install app dependencies
 # Copy over yarn.lock file as well as any unfortunate soul who uses NPM's package-lock.
 
-COPY package*.json .
+COPY package*.json ./
 COPY yarn.lock .
 
 RUN yarn
