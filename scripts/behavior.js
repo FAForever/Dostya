@@ -214,6 +214,11 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				unblacklistUser(message.author, arguments, message.guild)
 					.then(callback(0));
 				break;
+				
+			case "kill":
+				utils.log("KILL from "+message.author.username+" -- Exiting.", "XX", message.guild);
+				process.exit(1);
+				break;
 		}
 	}
 }

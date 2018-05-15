@@ -1,7 +1,7 @@
 {
 	"debug-mode": false,
 	"dev-only-mode": false,
-	"dev-only-commands": ["def", "logs"],
+	"dev-only-commands": ["def", "logs", "kill"],
 	"devs": ["142367571256147968"],
 	"prefixes": ["!", "Dostya! "],
 	"write-logs": true,
