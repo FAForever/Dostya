@@ -174,6 +174,11 @@ process.on('uncaughtException', function(err) {
   utils.log('-------------------------', 'XX');
 });
 
+process.on('SIGINT', function() {
+    console.log("Got sigint; exiting")
+    process.exit();
+});
+
 function refreshReceivers(client){
 	behavior.cleanReceivers();
 	for (let i = 0; i < client.guilds.array().length; i++){
