@@ -15,12 +15,6 @@ const utils = require('./utility.js');
 let receivers = [];
 let lastAnimatedMessage = {};
 
-/// On irc message received, send from IRC
-ircUplink.client.addListener('message#aeolus', function (author, message) {
-	utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
-	sendFromIrc(author, message);
-});
-
 /////////////////
 ////
 /// Execute command given
@@ -227,6 +221,20 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+/// Initializes IRC connection
+function initializeIrc(){
+	utils.log("Initializing IRC client...", "--"); 
+	ircUplink.initializeClient(function(ircClient){
+		/// On irc message received, send from IRC
+		ircClient.addListener('message#aeolus', function (author, message) {
+			if (author != ircClient.nick){
+				utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
+				sendFromIrc(author, message);
+			}
+		});
+	});
+}
 
 /// Checks if the function is only for developers
 function isDeveloperCommand(command, settings){
@@ -1189,7 +1197,7 @@ function sendMessage(channel, msgContent){
 	}
 	
 	if (canSend){
-		utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD", channel.guild);
+		//utils.log("Sent message "+msgContent+" on "+channel.toString()+"", "DD", channel.guild);
 		return channel.send(msgContent);
 	}
 	return utils.emptyPromise();
@@ -1275,5 +1283,9 @@ module.exports = {
    cleanReceivers: 
 	function(){
 		return cleanReceivers();
-	}
+	},
+	initializeIrc:
+	function(){
+		return initializeIrc();
+	},
 };
