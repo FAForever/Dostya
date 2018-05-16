@@ -37,6 +37,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |----------------|-------------------------------|
 |`define/def <property> <datatype> <value>`| Defines a guild-specific setting for the bot|
 |`logs`| PMs the last bot logs to the user|
+|`kill`| Kills the bot process.|
 
 ## Setting up the bot
 The bot runs using NodeJS. If you do not have it installed already, fire the following command :
