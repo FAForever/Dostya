@@ -232,7 +232,7 @@ function initializeIrc(){
 	utils.log("Initializing IRC client...", "--"); 
 	ircUplink.initializeClient(function(ircClient){
 		/// On irc message received, send from IRC
-		ircClient.addListener('message#aeolus', function (author, message) {
+		ircClient.on('message#aeolus', function (author, message) {
 			if (author != ircClient.nick){
 				utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
 				sendFromIrc(author, message);

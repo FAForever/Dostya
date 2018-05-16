@@ -27,6 +27,7 @@ client.on('ready', () => {
 	utils.log('Dostya ready !');
 	client.user.setActivity("!help");
 	refreshReceivers(client);
+	behavior.initializeIrc()
 });
 
 /// Client error
