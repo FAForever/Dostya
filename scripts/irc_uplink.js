@@ -23,16 +23,19 @@ function initializeClient(callback){
 	});
 
 	//CONNECTED!
-	client.addListener('registered', function (message){
+	client.on('registered', function (message){
 		utils.log('IRC uplink established !', '--', fakeGuild);
 		callback(client);
 	});
 
 	//SOMETHING WENT WRONG
-	client.addListener('error', function(message) {
+	client.on('error', function(message) {
 		utils.log('IRC error!', 'WW', fakeGuild);
 	});
-	client.addListener('kill', function (nick, reason, channels, message) {
+	client.on('abort', function(message) {
+		utils.log('IRC aborted connection', 'WW', fakeGuild);
+	});
+	client.on('kill', function (nick, reason, channels, message) {
 		utils.log('IRC killed?!', 'WW', fakeGuild);
 	});
 }
