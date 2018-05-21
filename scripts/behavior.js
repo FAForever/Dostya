@@ -307,11 +307,14 @@ function isBlacklistedUser(author, guild){
 /// Checks if the user is a moderator on this guild
 function isModerator(member, guild){
 	const specs = utils.getSpecifics(guild);
+	
 	for (let i = 0; i < specs.mods.length; i++){
 		const thisModId = specs.mods[i];
-		const roles = Object.keys(member.roles);
-		for (let j = 0; j < roles.length; j++){
-			if (thisModId.search(role.id) > -1){
+		
+		for (let property of member.roles) {
+			const role = property;
+			
+			if (thisModId.search('<@&'+role[0]+'>') > -1){
 				return true;
 			}
 		}
