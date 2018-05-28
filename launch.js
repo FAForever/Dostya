@@ -80,28 +80,28 @@ client.on('message', message => {
 					break;
 				
 				/// 0 means the command executed gracefully
-				case 0:
+				case behavior.COMMAND_SUCCCESS:
 					utils.log("EOI with "+message.author.username+"", "OK", message.guild);
 					behavior.startCooldown(settings, currentCooldown, message.guild.id);
 					break;
 				
 				/// 1 means the command could be executed because of cooldown
-				case 1:
+				case behavior.COMMAND_COOLDOWN:
 					utils.log("On cooldown, ignoring ["+command+"]", "--", message.guild);
 					break;
 				
 				/// 2 is command not found
-				case 2:
+				case behavior.COMMAND_UNKNOWN:
 					utils.log("Could not find ["+command+"]", "--", message.guild);
 					break;
 				
 				/// 3 is command misuse
-				case 3:
+				case behavior.COMMAND_MISUSE:
 					utils.log("Misuse of command ["+command+"]", "--", message.guild);
 					break;
 				
 				/// 4 is command forbidden
-				case 4:
+				case behavior.COMMAND_FORBIDDEN:
 					utils.log("Command forbidden in current state ["+command+"]", "--", message.guild);
 					break;
 			}
@@ -176,7 +176,7 @@ process.on('uncaughtException', function(err) {
 });
 
 process.on('SIGINT', function() {
-    console.log("Got sigint; exiting")
+    utils.log("SIGINT - Exiting", "XX")
     process.exit();
 });
 

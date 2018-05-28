@@ -54,9 +54,7 @@ module.exports = {
 	},
 	client: client,
 	fakeGuild: fakeGuild,
-	isInitialized: function(){
-		return (client == undefined);
-	}
+	chan: chan
 }
 
 //Client.nick

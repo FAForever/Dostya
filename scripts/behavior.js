@@ -14,6 +14,15 @@ const utils = require('./utility.js');
 
 let receivers = [];
 let lastAnimatedMessage = {};
+let lastIrcMessage;
+
+/// Constants for command state
+
+const COMMAND_SUCCCESS = 0;
+const COMMAND_COOLDOWN = 1;
+const COMMAND_UNKNOWN = 2;
+const COMMAND_MISUSE = 3;
+const COMMAND_FORBIDDEN = 4;
 
 /////////////////
 ////
@@ -232,11 +241,17 @@ function initializeIrc(){
 	utils.log("Initializing IRC client...", "--"); 
 	ircUplink.initializeClient(function(ircClient){
 		/// On irc message received, send from IRC
-		ircClient.on('message#aeolus', function (author, message) {
+		
+		ircClient.on('message'+ircUplink.chan, function (author, message) {
 			if (author != ircClient.nick){
 				utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
 				sendFromIrc(author, message);
 			}
+		});
+		
+		/// Add checkmark on last sent irc message on delivery
+		ircClient.on('selfMessage', function (to, messageText){
+			validateLastIrcMessage(messageText);
 		});
 	});
 }
@@ -710,12 +725,29 @@ function addToReceivers(channelObject){
 	receivers.push(channelObject);
 }
 
-/// Deletes messages and sends to IRC
+/// Adds a little V reaction on the last successfully sent message to the irc
+function validateLastIrcMessage(messageText){
+	if (lastIrcMessage == undefined || messageText === formatIrcMessage(lastIrcMessage.author.username, lastIrcMessage.content)){
+		lastIrcMessage.react("✅");
+	}
+}
+
+/// Manage message and sends to IRC
 function uplink(message){
 	if (message.channel.name == "aeolus"){
+		
+		if (lastIrcMessage != undefined){
+			lastIrcMessage.channel.fetchMessage(lastIrcMessage.id)
+				.then(msg => msg.clearReactions());
+		}
+		lastIrcMessage = message;
+		
 		sendToIrc(message.author.username, message.content);
+		
+		/* Uncommenting this will delete the original message and repost
 		message.channel.send('**'+message.author.username+'**: '+message.content);
 		message.delete();
+		*/
 		return true;
 	}
 	else{
@@ -725,7 +757,12 @@ function uplink(message){
 
 /// Sends message to the IRC
 function sendToIrc(authorString, messageString){
-	ircUplink.sendIrcMessage(authorString+': '+messageString);
+	ircUplink.sendIrcMessage(formatIrcMessage(authorString, messageString));
+}
+
+/// Format for IRC
+function formatIrcMessage(authorString, messageString){
+	return authorString+': '+messageString;
 }
 
 /// Sends a message received from the IRC
@@ -1184,10 +1221,10 @@ function animateCooldown(message, cooldown){
 	if (lastAnimatedMessage.react != undefined){
 		lastAnimatedMessage.clearReactions();
 	}
-	message.react("🇼")
-	.then(() => message.react("🇦"))
-	.then(() => message.react("🇮"))
-	.then(() => message.react("🇹"));
+	message.react("ðŸ‡¼")
+	.then(() => message.react("ðŸ‡¦"))
+	.then(() => message.react("ðŸ‡®"))
+	.then(() => message.react("ðŸ‡¹"));
 	lastAnimatedMessage = message;
 }
 
@@ -1248,6 +1285,13 @@ function refreshCooldown(id, cooldownObject){
 
 
 module.exports = {
+	
+	COMMAND_SUCCCESS:COMMAND_SUCCCESS,
+	COMMAND_COOLDOWN:COMMAND_COOLDOWN,
+	COMMAND_UNKNOWN:COMMAND_UNKNOWN,
+	COMMAND_MISUSE:COMMAND_MISUSE,
+	COMMAND_FORBIDDEN:COMMAND_FORBIDDEN,
+	
 	addToReceivers:
 	function(receiverChannel){
 		return addToReceivers(receiverChannel);
