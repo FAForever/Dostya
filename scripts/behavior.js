@@ -36,59 +36,59 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 	
 	if (!developer &&  settings["dev-only-mode"]){
 		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!", message.guild);
-		callback(4);
+		callback(COMMAND_FORBIDDEN);
 	}
 	else if (!developer && cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
 		/// Animates cooldown
 		animateCooldown(message, cooldown);
-		callback(1);
+		callback(COMMAND_COOLDOWN);
 	}
 	else if (!developer && isDeveloperCommand(command, settings)){
 		utils.log(message.author.username+" tried to fire a developer command without being dev", "!!", message.guild);
-		callback(4);
+		callback(COMMAND_FORBIDDEN);
 	}
 	else if (!developer && isRestrictedCommand(command, message.guild) && !isModerator(message.member, message.guild)){
 		utils.log(message.author.username+" tried to fire a restricted command", "!!", message.guild);
-		callback(4);
+		callback(COMMAND_FORBIDDEN);
 	}
 	else if (!developer && isBlacklistedUser(message.author, message.guild)){
 		utils.log(message.author.username+" tried to fire a command, but is blacklisted", "!!", message.guild);
-		callback(4);
+		callback(COMMAND_FORBIDDEN);
 	}
 	else{
 		switch (command){
 			default:
-				callback(2);
+				callback(COMMAND_UNKNOWN);
 				break;
 			
 			case "respond":
 			case "alive":
 				replyToMessage(message, "Dostya is still up.")
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "unit":
 			case "searchunit":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchUnitData(arguments, settings.urls.unitDB, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "wiki":
 				if (arguments == null ||!utils.isAlphanumeric(arguments.replace(/ /g, ""))){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchWikiArticle(arguments, settings.urls.wiki, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
@@ -98,130 +98,130 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 			case "mappool":
 				fetchLadderPool(settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "replay":
 			case "lastreplay":
 				if (arguments == null || (command == "replay" && !utils.isNumeric(arguments))){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchReplay(command, arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "clan":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchClan(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "player":
 			case "ratings":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchPlayer(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "searchplayer":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				arguments = escapeArguments(arguments);
 				fetchPlayerList(arguments, settings['player-search-limit'], settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(0))
+					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
 				
 			case "help":
 				sendMessage(message.author, "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya/blob/master/README.md")
-				.then(callback(0));
+				.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "sendtracker":
 			case "tracker":
 				sendTrackerFile(message.author, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "logs":
 				sendBotLogs(message.author)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "def":		/// !def array mods @Moderators,@Admins
 			case "define":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				const args = arguments.split(" ");
 				if (args.length < 3){
-					callback(3)
+					callback(COMMAND_MISUSE)
 				}
 				defineSpecific(message, args[0], args[1], args[2])
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "restrict":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				restrictCommand(message.author, arguments, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "unrestrict":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				unrestrictCommand(message.author, arguments, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "restrictions":
 				sendRestrictions(message.author, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "blacklist":
 				if (arguments == null){
 					sendBlacklist(message.author, message.guild)
-						.then(callback(0));
+						.then(callback(COMMAND_SUCCCESS));
 					break;
 				}
 				blacklistUser(message.author, arguments, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "unblacklist":
 				if (arguments == null){
-					callback(3);
+					callback(COMMAND_MISUSE);
 					break;
 				}
 				unblacklistUser(message.author, arguments, message.guild)
-					.then(callback(0));
+					.then(callback(COMMAND_SUCCCESS));
 				break;
 				
 			case "kill":
@@ -1221,10 +1221,10 @@ function animateCooldown(message, cooldown){
 	if (lastAnimatedMessage.react != undefined){
 		lastAnimatedMessage.clearReactions();
 	}
-	message.react("ðŸ‡¼")
-	.then(() => message.react("ðŸ‡¦"))
-	.then(() => message.react("ðŸ‡®"))
-	.then(() => message.react("ðŸ‡¹"));
+	message.react("🇼")
+	.then(() => message.react("🇦"))
+	.then(() => message.react("🇮"))
+	.then(() => message.react("🇹"));
 	lastAnimatedMessage = message;
 }
 
