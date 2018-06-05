@@ -38,12 +38,12 @@ function initializeClient(callback){
 	
 	for (let i = 0; i < errors.length; i++){
 		client.on(errors[i], function(message) {
-			if (!successfullConnection){
+			if (successfullConnection){
+				successfullConnection = false;
 				utils.log('IRC error : ['+errors[i]+']. Restarting every '+restartEvery+' until successfull connection', 'WW', fakeGuild);
 			}
 			if (!reinitializing){
 				reinitializing = true;
-				successfullConnection = false;
 				setTimeout(function ()
 					{ initializeClient(function(){});}, 
 					restartEvery
