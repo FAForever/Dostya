@@ -29,15 +29,15 @@ function initializeClient(callback){
 	});
 
 	//SOMETHING WENT WRONG
-	client.on('error', function(message) {
-		utils.log('IRC error!', 'WW', fakeGuild);
-	});
-	client.on('abort', function(message) {
-		utils.log('IRC aborted connection', 'WW', fakeGuild);
-	});
-	client.on('kill', function (nick, reason, channels, message) {
-		utils.log('IRC killed?!', 'WW', fakeGuild);
-	});
+	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'unhandled'];
+	
+	for (let i = 0; i < errors.length; i++){
+		client.on(errors[i], function(message) {
+			utils.log('IRC error : ['+errors[i]+']. Reinitializing...', 'WW', fakeGuild);
+			initializeClient();
+		});
+		
+	}
 }
 //Exports
 function sendIrcMessage(str){

@@ -839,7 +839,7 @@ function onPrefixFound(message, settings, utils, callback){
 function fetchReplay(command, replayIdOrName, apiUrl, callback){
    
    const includes = 'include=mapVersion,playerStats,mapVersion.map,playerStats.player,featuredMod,playerStats.player.globalRating,playerStats.player.ladder1v1Rating';
-   let fetchUrl = apiUrl+'game/'+replayIdOrName+'?'+includes;
+   let fetchUrl = apiUrl+'game?filter=id=='+replayIdOrName+'&'+includes;
    
    if (command == 'lastreplay'){
 		fetchUrl = apiUrl+'game?filter=playerStats.player.login=="'+replayIdOrName+'"&sort=-endTime&page[size]=1&'+includes;
