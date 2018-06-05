@@ -33,14 +33,14 @@ function initializeClient(callback){
 	});
 
 	//SOMETHING WENT WRONG
-	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'unhandled'];
-	const restartEvery = 3000;
+	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd'];
+	const restartEvery = 30000;
 	
 	for (let i = 0; i < errors.length; i++){
 		client.on(errors[i], function(message) {
 			if (successfullConnection){
 				successfullConnection = false;
-				utils.log('IRC error : ['+errors[i]+']. Restarting every '+restartEvery+' until successfull connection', 'WW', fakeGuild);
+				utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Restarting every '+(restartEvery/1000)+'seconds until successfull connection', 'WW', fakeGuild);
 			}
 			if (!reinitializing){
 				reinitializing = true;
