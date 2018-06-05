@@ -6,6 +6,8 @@ const chan = "#aeolus";
 //INIT
 const irc = require('funsocietyirc-client');
 let client;
+let reinitializing = false;
+let successfullConnection = false;
 
 function initializeClient(callback){
 	client = new irc.Client(
@@ -21,20 +23,32 @@ function initializeClient(callback){
 		stripColors: true,
 		channels: [chan],
 	});
-
+	reinitializing = false;
+	
 	//CONNECTED!
 	client.on('registered', function (message){
 		utils.log('IRC uplink established !', '--', fakeGuild);
+		successfullConnection = true;
 		callback(client);
 	});
 
 	//SOMETHING WENT WRONG
 	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'unhandled'];
+	const restartEvery = 3000;
 	
 	for (let i = 0; i < errors.length; i++){
 		client.on(errors[i], function(message) {
-			utils.log('IRC error : ['+errors[i]+']. Reinitializing...', 'WW', fakeGuild);
-			initializeClient();
+			if (!successfullConnection){
+				utils.log('IRC error : ['+errors[i]+']. Restarting every '+restartEvery+' until successfull connection', 'WW', fakeGuild);
+			}
+			if (!reinitializing){
+				reinitializing = true;
+				successfullConnection = false;
+				setTimeout(function ()
+					{ initializeClient(function(){});}, 
+					restartEvery
+				);
+			}
 		});
 		
 	}
