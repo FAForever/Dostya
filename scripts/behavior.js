@@ -856,9 +856,7 @@ function fetchReplay(command, replayIdOrName, apiUrl, callback){
 				(Array.isArray(data.data) && data.data.length > 0) || data.data.attributes != undefined)								
 			){
 			
-			if (command == 'lastreplay'){
-				data.data = data.data[0];
-			}
+			data.data = data.data[0];
 			
 			let replay = {
 				id : replayIdOrName,
