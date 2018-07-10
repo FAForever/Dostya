@@ -238,6 +238,21 @@ function padZero(str, len) {
     return (zeros + str).slice(-len);
 }
 
+function checkToken(privateDir,tokenPath){
+    const defaultTokenContent = '{"token": "PutYourTokenHere"}';
+
+    if (!fs.existsSync(tokenPath) || fs.readFileSync(tokenPath) == defaultTokenContent){
+        if (!fs.existsSync(privateDir)){
+            fs.mkdirSync(privateDir);
+        }
+        fs.writeFileSync(tokenPath, defaultTokenContent);
+        console.log("Hello and welcome to Dostya configuration.\n"+
+                    "To make Dostya work, you need to specify a TOKEN to be used by the bot. This token can be obtained through the developper panel on the discord.\n"+
+                    "Once you have it, put it into the "+tokenPath+" file and restart Dostya.");
+        log("No token found -- Aborting", "XX")
+        process.exit();
+    }
+}
 
 function uniqueNumber(str, modulo){
 	totalVal = 0;
@@ -459,6 +474,9 @@ module.exports = {
 	getCurrentLogPath:
 	function (){
 		return getCurrentLogPath();
-	}
-	
+	},
+    checkToken:
+    function (privatePath, tokenPath) {
+        return checkToken(privatePath, tokenPath);
+    }	
 }

@@ -13,6 +13,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`alive/respond`| Test command to check if the bot is running |
 |`help`| PMs a link to this page to the user|
 |`unit <unitID>`|Returns an embed preview of the unit and link to the unitDB page          |
+|`map <mapID/mapName>`|Returns an embed preview of the map and a link to download it |
 |`wiki <searchTerms>`|Performs a search on the faforever wiki and returns the first result     |
 |`pool/ladderpool/ladder`          |Returns the current map pool for the 1v1 ladder|
 |`replay <replayID>`|Returns a short résumé and a link to the replay given|
@@ -50,7 +51,7 @@ The bot runs using NodeJS. If you do not have it installed already, fire the fol
 - `npm install --save`
 
 ### Setting up basic parameters
-You need to give the bot a `token` for it to work properly. The token must be put in the `_private`folder of the bot, in the following way :
+You need to give the bot a `token` for it to work properly. The token must be put in the `_private` folder of the bot, in the following way :
 - `mkdir _private`
 - `cd _private`
 - `nano token.json`
@@ -62,33 +63,8 @@ Input the following :
 } 
 ```
 ### Setting up advanced parameters
-Inside the `configuration/` folder you can find a `settings.json` that you can modify for additional functionnality.
-```
-{
-	"debug-mode": false,
-	"dev-only-mode": false,
-	"dev-only-commands": ["def", "logs"],
-	"devs": ["142367571256147968"],
-	"prefixes": ["!", "Dostya! "],
-	"write-logs": true,
-	"cooldown": 30,
-	"player-search-limit": 5,
-	"aliases": {
-		"#": "!replay "
-	},
-	"urls": {
-		"unitDB": "http://direct.faforever.com/faf/unitsDB/",
-		"wiki": "https://wiki.faforever.com/",
-		"api": "https://api.faforever.com/",
-		"data": "https://api.faforever.com/data/"
-	},
-	"default-specifics": {
-		"mods": [],
-		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict"]
-	}
-}
-```
+Inside the `configuration/` folder you can find a `settings.json` that you can modify for additional functionnality. This file will be automatically created.
+
 ### Run the bot
 Fire `node init_bot.js` and you should be good to go.
 
