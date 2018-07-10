@@ -139,6 +139,18 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					.then(callback(COMMAND_SUCCCESS))
 				});
 				break;
+                
+            case "map":
+                if (arguments == null){
+                    callback(COMMAND_MISUSE);
+                    break;
+                }
+                arguments = escapeArguments(arguments);
+                fetchMap(arguments, settings.urls.data, function(content){
+					sendMessage(message.channel, content)
+					.then(callback(COMMAND_SUCCCESS))
+                });
+                break;
 				
 			case "searchplayer":
 				if (arguments == null){
@@ -733,22 +745,26 @@ function validateLastIrcMessage(messageText){
 }
 
 /// Manage message and sends to IRC
-function uplink(message){
+function uplink(message, settings){
 	if (message.channel.name == "aeolus"){
-		
 		if (lastIrcMessage != undefined){
 			lastIrcMessage.channel.fetchMessage(lastIrcMessage.id)
 				.then(msg => msg.clearReactions());
 		}
 		lastIrcMessage = message;
 		
-		sendToIrc(message.author.username, message.content);
-		
-		/* Uncommenting this will delete the original message and repost
-		message.channel.send('**'+message.author.username+'**: '+message.content);
-		message.delete();
-		*/
-		return true;
+        if (message.guild.id == settings['official-server']){
+            sendToIrc(message.author.username, message.content);
+            /* Uncommenting this will delete the original message and repost
+            message.channel.send('**'+message.author.username+'**: '+message.content);
+            message.delete();
+            */
+            return true;
+        }
+        else{
+            message.react("🔇");
+            return false;
+        }
 	}
 	else{
 		return false;
@@ -776,7 +792,13 @@ function sendFromIrc(authorString, messageString){
 }
 /// PMS welcome message to the user
 function sendWelcomeMessageTo(guildMember){
-	guildMember.send("Hello and Welcome to the **FAF Discord Server**. We are quite active and are happy to help with any problems you may have. \n\n__**Useful Links**__\nForums: http://forums.faforever.com/index.php \nWiki: https://wiki.faforever.com/index.php?title=Main_Page \nClient Download: https://faforever.com/client");
+    try{
+        guildMember.send("Hello and Welcome to the **FAF Discord Server**. We are quite active and are happy to help with any problems you may have. \n\n__**Useful Links**__\nForums: http://forums.faforever.com/index.php \nWiki: https://wiki.faforever.com/index.php?title=Main_Page \nClient Download: https://faforever.com/client");
+    }
+    catch(e){
+        utils.log("Could not send welcome message to "+guildMember.username+". Error follows :");
+        console.log(e);
+    }
 }
 
 /// Replace aliases in commands
@@ -1077,7 +1099,7 @@ function fetchLadderPool(apiUrl, callback){
 			
 			let embedMes = {
 				  "embed": {
-					"title": "**Ladder maps pool**",
+					"title": "**Ladder maps pool (First 25 entries)**",
 					"color": 0xFF0000,
 					"thumbnail": {
 					  "url": maps[Object.keys(maps)[0]].imgUrl
@@ -1104,6 +1126,114 @@ function fetchLadderPool(apiUrl, callback){
 		}
 		else{
 			callback("Could not retrieve map pool.");
+			return;
+		}
+		  
+	});
+}
+function fetchMap(mapNameOrId, apiUrl, callback){
+	
+    let filter = 'displayName=="'+mapNameOrId+'"';
+    if (utils.isNumeric(mapNameOrId) && !isNaN(parseFloat(mapNameOrId))){
+        filter = 'id=='+mapNameOrId+'';
+    }
+    const fetchUrl = apiUrl+'map?filter='+filter+'&page[size]=1&include=versions';
+    
+	utils.httpsFetch(fetchUrl, function(d){
+		if (Number.isInteger(d)){
+			callback("Server returned the error `"+d+"`.");
+			return;
+		}
+		
+		const data = JSON.parse(d);
+		if (data != undefined && data.included != undefined){
+			
+			let map = {};
+            map.author = "Unknown";
+            
+            const mapData = data.data[0];
+            const includes = data.included;
+				
+			for (let i = 0; i < includes.length; i++){
+				let thisData = includes[i];
+				switch (thisData.type){
+					default:
+						continue;
+						break;
+						
+					case "mapVersion":						
+						map.imgUrl = thisData.attributes.thumbnailUrlLarge.replace(/( )/g, "%20");
+						map.version = thisData.attributes.version;
+						map.size = ((thisData.attributes.width/512)*10)+"x"+((thisData.attributes.height/512)*10)+" km";
+                        map.description = thisData.attributes.description.replace(/<\/?[^>]+(>|$)/g, "");;
+                        map.downloadUrl = thisData.attributes.downloadUrl;
+                        map.maxPlayers = thisData.attributes.maxPlayers;
+                        map.ranked = thisData.attributes.ranked;
+						break;
+						
+					case "player":
+                        map.author = thisData.attributes.login;				
+						break;
+				}
+			}
+            
+            map.id = mapData.id;
+            map.displayName = mapData.attributes.displayName;
+            map.createTime = mapData.attributes.createTime;
+			
+			let embedMes = {
+				  "embed": {
+					"title": "Download map",
+                    "description": map.description,
+					"color": 0xFF0000,
+                    "author":{
+                        "name":""+map.displayName+" (id #"+map.id+")",
+                        "url": map.downloadUrl
+                    },
+                    "image": {
+                      "url": map.imgUrl
+                    },
+					"fields": [
+                        {
+                            "name": "Size",
+                            "value": map.size,
+                            "inline": true
+                        },
+                        {
+                            "name": "Max players",
+                            "value": map.maxPlayers,
+                            "inline": true
+                        },
+                        {
+                            "name": "Ranked",
+                            "value": map.ranked,
+                            "inline": true
+                        },
+                        {
+                            "name": "Created at",
+                            "value": map.createTime,
+                            "inline": true
+                        },
+                        {
+                            "name": "Author",
+                            "value": map.author,
+                            "inline": true
+                        }                 
+                    ]
+				  }
+				} 
+			
+            if (map.downloadUrl != undefined){
+                embedMes.embed.url = map.downloadUrl.replace(/ /g, "%20");
+                embedMes.embed.author.url = map.downloadUrl.replace(/ /g, "%20");
+            }
+            
+            callback(embedMes);
+            return;
+			
+		}
+		else{
+			callback("Could not find map");
 			return;
 		}
 		  
@@ -1323,8 +1453,8 @@ module.exports = {
 		return sendFromIrc(authorString, messageString);
 	},
 	uplink:
-	function(message){
-		return uplink(message);
+	function(message, settings){
+		return uplink(message, settings);
 	},
    aliasCommand: 
 	function(message, settings){

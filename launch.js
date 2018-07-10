@@ -12,9 +12,14 @@ const utils = require('./scripts/utility.js');
 const behavior = require('./scripts/behavior.js');
 
 /// Configuration
-const token = require('./_private/token.json');
+const privateDir = './_private';
+const tokenPath = privateDir+'/token.json';
+
+utils.checkToken(privateDir, tokenPath);
+
+const token = require(tokenPath);
 const settings = require('./configuration/settings.json');
-const databaseFile = './_private/userdata.db';  
+const databaseFile = privateDir+'/userdata.db';  
 
 /// Variable initialization
 let db = new sqlite3.Database(databaseFile);  
@@ -40,8 +45,15 @@ client.on('disconnect', () => {
   utils.log('Dostya has disconnected', 'WW');
 });
 
+/// Refreshing IRC receivers
 client.on('guildCreate', guild =>{
 	utils.log('Dostya has been added to guild '+guild.name+'', '!!');
+	refreshReceivers(client);
+});
+client.on('channelCreate', guild=>{
+	refreshReceivers(client);
+});
+client.on('channelDelete', guild=>{
 	refreshReceivers(client);
 });
 
@@ -62,7 +74,7 @@ client.on('message', message => {
 	}
 	
 	/// Aeolus transmission - if needed
-	behavior.uplink(message);
+	behavior.uplink(message, settings);
 	
 	/// Aliasing
 	behavior.aliasCommand(message, settings);
@@ -75,7 +87,7 @@ client.on('message', message => {
 			
 			switch(state){
 				
-				default:
+				default: // should not happen!
 					utils.log("Invalid command state - Please check command ["+command+"] with argument ["+argument+"]", "><", message.guild);
 					break;
 				
@@ -109,61 +121,6 @@ client.on('message', message => {
 		
 	});
 	
-	/*
-	//////////////////////
-	// INPUT DETECTION
-	//////////////////////
-	if (talkingToMe){	//It does => Execing command
-		  //Exit if on cooldown
-		if (onCooldown[message.guild.id]){
-				message.react("ðŸ‡¼")
-				.then(() => message.react("ðŸ‡¦"))
-				.then(() => message.react("ðŸ‡®"))
-				.then(() => message.react("ðŸ‡¹"));
-	            utils.log('On cooldown, ignoring ['+message.content+']', '--', message.guild);
-	            return;
-	        }
-
-		let canDo = true;
-		if (settings["dev-only-mode"]){
-			const aId = parseInt(message.author.id)
-			if (settings["devs"].indexOf(aId, settings["devs"]) < 0){
-				utils.log(message.author.username+' is not a developper, and dev-only-mode activated. Doing nothing.', '><', message.guild);
-				canDo = false;
-			}
-		}
-		if (canDo){
-			utils.log("Reacting to ["+msgString+"] ...", "..", message.guild);
-			behavior.react(message, function(result){
-				
-				if (result === false){
-					utils.log("...failed!", "WW", message.guild);
-				}
-				else if (result === null){
-					utils.log("...nothing to respond to that.", "><", message.guild);
-				}
-				else if (result === true){
-					issuedCommand = true;
-					utils.log("...end of interaction.", "OK", message.guild);
-				}
-				else{
-					issuedCommand = true;
-				}
-			});
-		}
-	}
-	//////////////////////
-	// POINT-ADDING BEHAVIOR
-	//////////////////////
-	if (!issuedCommand){
-		let fakeList = [];
-		fakeList.push(message.author.id);
-		behavior.addPoints(db, fakeList, .3);
-	}
-	else{
-		//User issued command : cooldown mode
-	}
-	*/
 });
 
 
@@ -181,6 +138,7 @@ process.on('SIGINT', function() {
 });
 
 function refreshReceivers(client){
+    utils.log("Refreshing receivers...", "--");
 	behavior.cleanReceivers();
 	for (let i = 0; i < client.guilds.array().length; i++){
 		const guild = client.guilds.array()[i];
