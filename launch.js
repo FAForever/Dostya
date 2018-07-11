@@ -4,9 +4,7 @@ const fs = require("fs");
 const sqlite3 = require('sqlite3').verbose();
 
 const client = new Discord.Client();
-module.exports = {
-   getChannel: function(str){	return client.channels.get(str);}
-}
+
 // Scripts
 const utils = require('./scripts/utility.js');
 const behavior = require('./scripts/behavior.js');
@@ -31,8 +29,8 @@ utils.log('Dostya launched ! Preparing...');
 client.on('ready', () => {
 	utils.log('Dostya ready !');
 	client.user.setActivity("!help");
-	refreshReceivers(client);
-	behavior.initializeIrc()
+	refreshReceivers(settings, client);
+	behavior.initializeIrc(settings)
 });
 
 /// Client error
@@ -48,13 +46,13 @@ client.on('disconnect', () => {
 /// Refreshing IRC receivers
 client.on('guildCreate', guild =>{
 	utils.log('Dostya has been added to guild '+guild.name+'', '!!');
-	refreshReceivers(client);
+	refreshReceivers(settings, client);
 });
 client.on('channelCreate', guild=>{
-	refreshReceivers(client);
+	refreshReceivers(settings, client);
 });
 client.on('channelDelete', guild=>{
-	refreshReceivers(client);
+	refreshReceivers(settings, client);
 });
 
 /// Adding guildmember
@@ -73,9 +71,11 @@ client.on('message', message => {
 		return;
 	}
 	
-	/// Aeolus transmission - if needed
-	behavior.uplink(message, settings);
-	
+	/// IRC transmission - if needed
+    if (settings['allowed-bridges'][message.channel.name] != undefined){
+        behavior.uplink(message.channel.name, message, settings);
+    }
+
 	/// Aliasing
 	behavior.aliasCommand(message, settings);
 	
@@ -137,17 +137,21 @@ process.on('SIGINT', function() {
     process.exit();
 });
 
-function refreshReceivers(client){
+function refreshReceivers(settings, client){
     utils.log("Refreshing receivers...", "--");
 	behavior.cleanReceivers();
-	for (let i = 0; i < client.guilds.array().length; i++){
-		const guild = client.guilds.array()[i];
-		const channel = guild.channels.find("name", "aeolus");
-		if (channel != null && channel.type == "text"){
-			behavior.addToReceivers(channel);
-			utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>");
-		}
-	}
+    for (k in settings['allowed-bridges']){
+        if (settings['allowed-bridges'][k].length > 0){
+            for (let i = 0; i < client.guilds.array().length; i++){
+                const guild = client.guilds.array()[i];
+                const channel = guild.channels.find("name", k);
+                if (channel != null && channel.type == "text"){
+                    behavior.addToReceivers(k, channel);
+                    utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>");
+                }
+            }
+        }
+    }
 }
 
 

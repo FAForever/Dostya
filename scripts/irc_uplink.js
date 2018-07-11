@@ -1,7 +1,7 @@
 //UTILS
 const utils = require('./utility.js');
-const fakeGuild = {name: 'IRC-AEOLUS', id: '0000'};
-const chan = "#aeolus";
+const fakeGuild = {name: 'IRC-CONNCTN', id: '0000'};
+let channels = [];
 
 //INIT
 const irc = require('funsocietyirc-client');
@@ -21,7 +21,7 @@ function initializeClient(callback){
 		retryCount: 0,
 		retryDelay: 2000,
 		stripColors: true,
-		channels: [chan],
+		channels: channels,
 	});
 	reinitializing = false;
 	
@@ -54,21 +54,21 @@ function initializeClient(callback){
 	}
 }
 //Exports
-function sendIrcMessage(str){
+function sendIrcMessage(channel, str){
 	utils.log("[TIRC] "+str, "++", fakeGuild);
-	client.say(chan, str);
+	client.say("#"+channel, str);
 }
 
 module.exports = {
-	sendIrcMessage: function(str){
-		sendIrcMessage(str);
+	sendIrcMessage: function(channel, str){
+		sendIrcMessage(channel, str);
 	},
 	initializeClient: function(callback){
 		return initializeClient(callback);
 	},
 	client: client,
 	fakeGuild: fakeGuild,
-	chan: chan
+	channels: channels
 }
 
 //Client.nick
