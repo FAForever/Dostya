@@ -249,17 +249,23 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 ///////////////
 
 /// Initializes IRC connection
-function initializeIrc(){
+function initializeIrc(settings){
 	utils.log("Initializing IRC client...", "--"); 
+    for (let k in settings['allowed-bridges']){
+        ircUplink.channels.push("#"+k);
+    }
 	ircUplink.initializeClient(function(ircClient){
 		/// On irc message received, send from IRC
 		
-		ircClient.on('message'+ircUplink.chan, function (author, message) {
-			if (author != ircClient.nick){
-				utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
-				sendFromIrc(author, message);
-			}
-		});
+        for (let i = 0; i < ircUplink.channels.length; i++){
+            const channelName = ircUplink.channels[i];
+            ircClient.on('message'+channelName, function (author, message) {
+                if (author != ircClient.nick){
+                    utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
+                    sendFromIrc(channelName.substr(1, channelName.length), author, message);
+                }
+            });
+        }
 		
 		/// Add checkmark on last sent irc message on delivery
 		ircClient.on('selfMessage', function (to, messageText){
@@ -733,8 +739,11 @@ function cleanReceivers(){
 }
 
 /// Add to the list of receiver channels - channels that will receive IRC messages
-function addToReceivers(channelObject){
-	receivers.push(channelObject);
+function addToReceivers(ircChannel, channelObject){
+    if (receivers[ircChannel] == undefined){
+        receivers[ircChannel] = [];
+    }
+	receivers[ircChannel].push(channelObject);
 }
 
 /// Adds a little V reaction on the last successfully sent message to the irc
@@ -745,16 +754,16 @@ function validateLastIrcMessage(messageText){
 }
 
 /// Manage message and sends to IRC
-function uplink(message, settings){
-	if (message.channel.name == "aeolus"){
+function uplink(ircChannel, message, settings){
+	if (message.channel.name == ircChannel){
 		if (lastIrcMessage != undefined){
 			lastIrcMessage.channel.fetchMessage(lastIrcMessage.id)
 				.then(msg => msg.clearReactions());
 		}
 		lastIrcMessage = message;
 		
-        if (message.guild.id == settings['official-server']){
-            sendToIrc(message.author.username, message.content);
+        if (isUplinkAllowed(settings, ircChannel, message.guild.id)){
+            sendToIrc(ircChannel, message.author.username, message.content);
             /* Uncommenting this will delete the original message and repost
             message.channel.send('**'+message.author.username+'**: '+message.content);
             message.delete();
@@ -771,9 +780,16 @@ function uplink(message, settings){
 	}
 }
 
+/// Checks if the guild has write access to that IRC channel
+function isUplinkAllowed(settings, channel, guildId){
+    const allowed = settings['allowed-bridges'];
+    const allowedFor = allowed[channel];
+    return allowedFor.indexOf(guildId) > -1;
+}
+
 /// Sends message to the IRC
-function sendToIrc(authorString, messageString){
-	ircUplink.sendIrcMessage(formatIrcMessage(authorString, messageString));
+function sendToIrc(channelName, authorString, messageString){
+	ircUplink.sendIrcMessage(channelName, formatIrcMessage(authorString, messageString));
 }
 
 /// Format for IRC
@@ -782,9 +798,9 @@ function formatIrcMessage(authorString, messageString){
 }
 
 /// Sends a message received from the IRC
-function sendFromIrc(authorString, messageString){
-	for (let i = 0; i < receivers.length; i++){
-		let channel = receivers[i];
+function sendFromIrc(channelName, authorString, messageString){
+	for (let i = 0; i < receivers[channelName].length; i++){
+		let channel = receivers[channelName][i];
 		if (channel != undefined){
 			sendMessage(channel, '**'+authorString+'**: '+messageString);
 		}
@@ -792,13 +808,10 @@ function sendFromIrc(authorString, messageString){
 }
 /// PMS welcome message to the user
 function sendWelcomeMessageTo(guildMember){
-    try{
-        guildMember.send("Hello and Welcome to the **FAF Discord Server**. We are quite active and are happy to help with any problems you may have. \n\n__**Useful Links**__\nForums: http://forums.faforever.com/index.php \nWiki: https://wiki.faforever.com/index.php?title=Main_Page \nClient Download: https://faforever.com/client");
-    }
-    catch(e){
-        utils.log("Could not send welcome message to "+guildMember.username+". Error follows :");
-        console.log(e);
-    }
+    guildMember.send("Hello and Welcome to the **FAF Discord Server**. We are quite active and are happy to help with any problems you may have. \n\n__**Useful Links**__\nForums: http://forums.faforever.com/index.php \nWiki: https://wiki.faforever.com/index.php?title=Main_Page \nClient Download: https://faforever.com/client")
+    .catch(e => {
+        utils.log("Could not send welcome message to "+guildMember.user.username+""); 
+    });
 }
 
 /// Replace aliases in commands
@@ -1421,8 +1434,8 @@ module.exports = {
 	COMMAND_FORBIDDEN:COMMAND_FORBIDDEN,
 	
 	addToReceivers:
-	function(receiverChannel){
-		return addToReceivers(receiverChannel);
+	function(ircChannel, receiverChannel){
+		return addToReceivers(ircChannel, receiverChannel);
 	},
    startCooldown: 
 	function(settings, cooldownObject, guildId){
@@ -1449,12 +1462,12 @@ module.exports = {
 		return sendToIrc(authorString, messageString);
 	},
    sendFromIrc: 
-	function(authorString, messageString){
-		return sendFromIrc(authorString, messageString);
+	function(channelName, authorString, messageString){
+		return sendFromIrc(channelName, authorString, messageString);
 	},
 	uplink:
-	function(message, settings){
-		return uplink(message, settings);
+	function(ircChannel, message, settings){
+		return uplink(ircChannel, message, settings);
 	},
    aliasCommand: 
 	function(message, settings){
@@ -1465,7 +1478,7 @@ module.exports = {
 		return cleanReceivers();
 	},
 	initializeIrc:
-	function(){
-		return initializeIrc();
+	function(settings){
+		return initializeIrc(settings);
 	},
 };

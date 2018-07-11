@@ -3,7 +3,10 @@
 	"dev-only-mode": false,
 	"dev-only-commands": ["def", "logs", "kill"],
 	"devs": ["142367571256147968"],
-    "official-server": "197033481883222026",
+    "allowed-bridges":{
+        "aeolus": ["197033481883222026"],
+        "russian": ["197033481883222026","377779088292708353"]
+    },
 	"prefixes": ["!", "Dostya! "],
 	"write-logs": true,
 	"cooldown": 30,
