@@ -763,6 +763,7 @@ function uplink(ircChannel, message, settings){
 		lastIrcMessage = message;
 		
         if (isUplinkAllowed(settings, ircChannel, message.guild.id)){
+            utils.log("[TIRC] [FROM: "+message.author.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
             sendToIrc(ircChannel, message.author.username, message.content);
             /* Uncommenting this will delete the original message and repost
             message.channel.send('**'+message.author.username+'**: '+message.content);

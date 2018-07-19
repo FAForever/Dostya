@@ -55,7 +55,6 @@ function initializeClient(callback){
 }
 //Exports
 function sendIrcMessage(channel, str){
-	utils.log("[TIRC] "+str, "++", fakeGuild);
 	client.say("#"+channel, str);
 }
 
