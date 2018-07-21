@@ -24,6 +24,6 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict"]
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge"]
 	}
 }

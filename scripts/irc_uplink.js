@@ -1,13 +1,14 @@
 //UTILS
 const utils = require('./utility.js');
-const fakeGuild = {name: 'IRC-CONNCTN', id: '0000'};
+const fakeGuild = {name: 'IRC-BRIDGE', id: '0000'};
 let channels = [];
 
 //INIT
 const irc = require('funsocietyirc-client');
+const EventEmitter = require('events');
+const status = new EventEmitter();
 let client;
 let reinitializing = false;
-let successfullConnection = false;
 
 function initializeClient(callback){
 	client = new irc.Client(
@@ -16,42 +17,45 @@ function initializeClient(callback){
 		userName: '_Discord-Uplink',
 		realName: '_Discord-Dostya-Uplink',
 		port: 8067,
-		autoRejoin: true,
+		autoRejoin: false,
 		autoConnect: true,
 		retryCount: 0,
 		retryDelay: 2000,
 		stripColors: true,
 		channels: channels,
 	});
-	reinitializing = false;
 	
 	//CONNECTED!
 	client.on('registered', function (message){
 		utils.log('IRC uplink established !', '--', fakeGuild);
-		successfullConnection = true;
 		callback(client);
 	});
 
 	//SOMETHING WENT WRONG
-	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd'];
-	const restartEvery = 30000;
+	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'kick'];
 	
-	for (let i = 0; i < errors.length; i++){
-		client.on(errors[i], function(message) {
-			if (successfullConnection){
-				successfullConnection = false;
-				utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Restarting every '+(restartEvery/1000)+'seconds until successfull connection', 'WW', fakeGuild);
-			}
-			if (!reinitializing){
-				reinitializing = true;
-				setTimeout(function ()
-					{ initializeClient(function(){});}, 
-					restartEvery
-				);
-			}
-		});
-		
-	}
+    for (let i = 0; i < errors.length; i++){
+        client.on(errors[i], function(message) {
+            if (!reinitializing){
+                utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Connection presumably dropped.', 'WW', fakeGuild);
+                status.emit("connectionClosed", errors[i]);
+            }
+        });
+    }
+}
+function killClient(){
+    reinitializing = true;
+    try{   
+        client.disconnect();
+        client = undefined;
+        delete client;
+    }
+    catch(e){
+        utils.log('Error on IRC while disconnecting  - Bot was probably already disconnected', 'WW', fakeGuild);
+        console.log(e);
+    }
+    reinitializing = false;
+    utils.log('Client killed', '--', fakeGuild);
 }
 //Exports
 function sendIrcMessage(channel, str){
@@ -65,9 +69,15 @@ module.exports = {
 	initializeClient: function(callback){
 		return initializeClient(callback);
 	},
-	client: client,
+	killClient: function(){
+		return killClient();
+	},
+	getClient: function(){
+        return client
+    },
 	fakeGuild: fakeGuild,
-	channels: channels
+	channels: channels,
+    status: status
 }
 
 //Client.nick

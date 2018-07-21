@@ -32,6 +32,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`unblacklist <@user>`| Removes an user from the blacklist|
 |`restrict <command>`|Prevents anyone from firing the command, except Mods          |
 |`unrestrict <command>`|Remove the command from the restrictions list|
+|`fixbridge`|Reinitializes the connection to all IRC bridges established|
 
 ### Developer commands
 |       Usage         |Effect                         |

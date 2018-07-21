@@ -1,7 +1,6 @@
 /// Libraries
 const Discord = require('discord.js');
 const fs = require("fs");
-const sqlite3 = require('sqlite3').verbose();
 
 const client = new Discord.Client();
 
@@ -20,7 +19,7 @@ const settings = require('./configuration/settings.json');
 const databaseFile = privateDir+'/userdata.db';  
 
 /// Variable initialization
-let db = new sqlite3.Database(databaseFile);  
+//let db = new sqlite3.Database(databaseFile);  
 let currentCooldown = {};
 
 utils.log('Dostya launched ! Preparing...');

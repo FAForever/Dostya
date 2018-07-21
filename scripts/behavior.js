@@ -6,7 +6,7 @@
 ///////////////////
 
 const Discord = require('discord.js');
-const sqlite3 = require('sqlite3').verbose();
+//const sqlite3 = require('sqlite3').verbose();
 const fs = require("fs");
 
 const ircUplink = require('./irc_uplink.js');
@@ -15,6 +15,7 @@ const utils = require('./utility.js');
 let receivers = [];
 let lastAnimatedMessage = {};
 let lastIrcMessage;
+let ircRestarting = false;
 
 /// Constants for command state
 
@@ -240,6 +241,19 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				utils.log("KILL from "+message.author.username+" -- Exiting.", "XX", message.guild);
 				process.exit(1);
 				break;
+                
+            case "fixbridge":
+                const r = restartIrc(settings, "Manual restart"); 
+                let msg;
+                if (r){
+                    msg = "All IRC bridges will restart in 5 seconds.";
+                }
+                else{
+                    msg = "Restart failed. The bridges may already be restarting.";
+                }
+				sendMessage(message.channel, msg)
+				.then(callback(COMMAND_SUCCCESS));
+                break;
 		}
 	}
 }
@@ -251,27 +265,66 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// Initializes IRC connection
 function initializeIrc(settings){
 	utils.log("Initializing IRC client...", "--"); 
+    ircUplink.status.on('connectionClosed', function(errorName){
+        if (ircUplink.getClient() != undefined){
+            restartIrc(settings, errorName);
+        }
+    });
     for (let k in settings['allowed-bridges']){
         ircUplink.channels.push("#"+k);
     }
-	ircUplink.initializeClient(function(ircClient){
-		/// On irc message received, send from IRC
-		
-        for (let i = 0; i < ircUplink.channels.length; i++){
-            const channelName = ircUplink.channels[i];
-            ircClient.on('message'+channelName, function (author, message) {
-                if (author != ircClient.nick){
-                    utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
-                    sendFromIrc(channelName.substr(1, channelName.length), author, message);
-                }
+    startIrc(settings);
+}
+
+/// Properly ends IRC connection and notifies
+function stopIrc(settings, errorName){
+    /// Something happened to the bridge
+    for (k in ircUplink.channels){
+        const channel = ircUplink.channels[k];
+        sendFromIrc(channel.substr(1, channel.length), "IRC", "`Connection closed by remote host : ["+errorName+"]. Dostya will reconnect as soon as possible.`");
+    }
+    utils.log('Killing IRC client because of '+errorName);
+    ircUplink.killClient();
+}
+
+/// Starts IRC and sets up emitters
+function startIrc(settings){
+    if (ircUplink.getClient() == undefined){
+        ircRestarting = false;
+        ircUplink.initializeClient(function(ircClient){
+            /// On irc message received, send from IRC
+            for (let i = 0; i < ircUplink.channels.length; i++){
+                const channelName = ircUplink.channels[i];
+                ircClient.on('message'+channelName, function (author, message) {
+                    if (author != ircClient.nick){
+                        utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
+                        sendFromIrc(channelName.substr(1, channelName.length), author, message);
+                    }
+                });
+                sendFromIrc(channelName.substr(1, channelName.length), "IRC", "`Connection established.`");
+            }
+            
+            /// Add checkmark on last sent irc message on delivery
+            ircClient.on('selfMessage', function (to, messageText){
+                validateLastIrcMessage(messageText);
             });
-        }
-		
-		/// Add checkmark on last sent irc message on delivery
-		ircClient.on('selfMessage', function (to, messageText){
-			validateLastIrcMessage(messageText);
-		});
-	});
+        });
+    }
+    else{
+        utils.log('IRC Client already started, not starting another one.', 'WW');
+    }
+}
+/// Stops and start irc
+function restartIrc(settings, errorName){
+    if (!ircRestarting){
+        ircRestarting = true;
+        stopIrc(settings, errorName);
+        setTimeout(function(){startIrc(settings)}, 5000);
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 
 /// Checks if the function is only for developers
