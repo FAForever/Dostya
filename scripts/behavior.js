@@ -297,7 +297,7 @@ function startIrc(settings){
                 const channelName = ircUplink.channels[i];
                 ircClient.on('message'+channelName, function (author, message) {
                     if (author != ircClient.nick){
-                        utils.log("[FIRC] "+author+": "+message, "++", ircUplink.fakeGuild);
+                        utils.log("[FIRC] [FROM "+author+"#"+channelName+"] "+author+": "+message, "++", ircUplink.fakeGuild);
                         sendFromIrc(channelName.substr(1, channelName.length), author, message);
                     }
                 });
@@ -816,7 +816,7 @@ function uplink(ircChannel, message, settings){
 		lastIrcMessage = message;
 		
         if (isUplinkAllowed(settings, ircChannel, message.guild.id)){
-            utils.log("[TIRC] [FROM: "+message.author.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
+            utils.log("[TIRC#"+ircChannel+"] [FROM: "+message.author.id+"@"+message.guild.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
             sendToIrc(ircChannel, message.author.username, message.content);
             /* Uncommenting this will delete the original message and repost
             message.channel.send('**'+message.author.username+'**: '+message.content);
