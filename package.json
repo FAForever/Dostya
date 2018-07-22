@@ -6,13 +6,18 @@
   "main": "launch.js",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "express": "^4.16.3",
+    "express-session": "^1.15.6",
+    "external-ip": "^2.0.3",
     "fs": "^0.0.1-security",
     "funsocietyirc-client": "^0.1.12",
     "http": "^0.0.0",
     "https": "^1.0.0",
     "jschardet": "^1.6.0",
     "mkdirp": "^0.5.1",
-    "sqlite3": "^4.0.0"
+    "passport": "^0.4.0",
+    "passport-oauth2": "^1.4.0",
+    "sqlite3": "^4.0.2"
   },
   "devDependencies": {},
   "scripts": {

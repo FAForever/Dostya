@@ -19,7 +19,8 @@
 		"unitDB": "http://direct.faforever.com/faf/unitsDB/",
 		"wiki": "https://wiki.faforever.com/",
 		"api": "https://api.faforever.com/",
-		"data": "https://api.faforever.com/data/"
+		"data": "https://api.faforever.com/data/",
+        "auth": "address-of-server-hosting-dostya.com"
 	},
 	"default-specifics": {
 		"mods": [],

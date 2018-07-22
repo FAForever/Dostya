@@ -6,11 +6,14 @@
 ///////////////////
 
 const Discord = require('discord.js');
-//const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3').verbose();
 const fs = require("fs");
 
 const ircUplink = require('./irc_uplink.js');
+const linker = require('./faf_account_linking.js');
 const utils = require('./utility.js');
+
+const db = new sqlite3.Database(process.cwd()+'/_private/userdata.db');
 
 let receivers = [];
 let lastAnimatedMessage = {};
@@ -19,7 +22,7 @@ let ircRestarting = false;
 
 /// Constants for command state
 
-const COMMAND_SUCCCESS = 0;
+const COMMAND_SUCCESS = 0;
 const COMMAND_COOLDOWN = 1;
 const COMMAND_UNKNOWN = 2;
 const COMMAND_MISUSE = 3;
@@ -65,7 +68,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 			case "respond":
 			case "alive":
 				replyToMessage(message, "Dostya is still up.")
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "unit":
@@ -77,7 +80,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchUnitData(arguments, settings.urls.unitDB, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
@@ -89,7 +92,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchWikiArticle(arguments, settings.urls.wiki, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
@@ -99,7 +102,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 			case "mappool":
 				fetchLadderPool(settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
@@ -112,7 +115,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchReplay(command, arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
@@ -124,7 +127,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchClan(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
@@ -137,7 +140,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchPlayer(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
                 
@@ -149,7 +152,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 arguments = escapeArguments(arguments);
                 fetchMap(arguments, settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
                 });
                 break;
 				
@@ -161,24 +164,24 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 				arguments = escapeArguments(arguments);
 				fetchPlayerList(arguments, settings['player-search-limit'], settings.urls.data, function(content){
 					sendMessage(message.channel, content)
-					.then(callback(COMMAND_SUCCCESS))
+					.then(callback(COMMAND_SUCCESS))
 				});
 				break;
 				
 			case "help":
 				sendMessage(message.author, "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya/blob/master/README.md")
-				.then(callback(COMMAND_SUCCCESS));
+				.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "sendtracker":
 			case "tracker":
 				sendTrackerFile(message.author, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "logs":
 				sendBotLogs(message.author)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "def":		/// !def array mods @Moderators,@Admins
@@ -192,7 +195,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					callback(COMMAND_MISUSE)
 				}
 				defineSpecific(message, args[0], args[1], args[2])
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "restrict":
@@ -201,7 +204,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				restrictCommand(message.author, arguments, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "unrestrict":
@@ -210,22 +213,22 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				unrestrictCommand(message.author, arguments, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "restrictions":
 				sendRestrictions(message.author, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "blacklist":
 				if (arguments == null){
 					sendBlacklist(message.author, message.guild)
-						.then(callback(COMMAND_SUCCCESS));
+						.then(callback(COMMAND_SUCCESS));
 					break;
 				}
 				blacklistUser(message.author, arguments, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "unblacklist":
@@ -234,11 +237,12 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
 				unblacklistUser(message.author, arguments, message.guild)
-					.then(callback(COMMAND_SUCCCESS));
+					.then(callback(COMMAND_SUCCESS));
 				break;
 				
 			case "kill":
 				utils.log("KILL from "+message.author.username+" -- Exiting.", "XX", message.guild);
+                stopIrc(settings, "Dostya killed");
 				process.exit(1);
 				break;
                 
@@ -252,7 +256,19 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                     msg = "Restart failed. The bridges may already be restarting.";
                 }
 				sendMessage(message.channel, msg)
-				.then(callback(COMMAND_SUCCCESS));
+				.then(callback(COMMAND_SUCCESS));
+                break;
+                
+            case "link":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}
+                const username = escapeArguments(arguments);
+                
+                link(message, username);
+                
+                callback(COMMAND_SUCCESS);
                 break;
 		}
 	}
@@ -816,13 +832,23 @@ function uplink(ircChannel, message, settings){
 		lastIrcMessage = message;
 		
         if (isUplinkAllowed(settings, ircChannel, message.guild.id)){
-            utils.log("[TIRC#"+ircChannel+"] [FROM: "+message.author.id+"@"+message.guild.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
-            sendToIrc(ircChannel, message.author.username, message.content);
-            /* Uncommenting this will delete the original message and repost
-            message.channel.send('**'+message.author.username+'**: '+message.content);
-            message.delete();
-            */
-            return true;
+            let ok = false;
+            ifLinked(message.author.id, function(isLinked){
+                if (isLinked){
+                    utils.log("[TIRC#"+ircChannel+"] [FROM: "+message.author.id+"@"+message.guild.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
+                    sendToIrc(ircChannel, message.author.username, message.content);
+                    ok = true;
+                    /* Uncommenting this will delete the original message and repost
+                    message.channel.send('**'+message.author.username+'**: '+message.content);
+                    message.delete();
+                    */
+                }
+                else{
+                    message.react("❌");
+                    sendMessage(message.author, "You must link your discord account to FAF to use #"+ircChannel+" with the bridge.\nUse the `!link` command to link your account.");
+                }
+            });
+            return ok;
         }
         else{
             message.react("🔇");
@@ -1478,10 +1504,59 @@ function refreshCooldown(id, cooldownObject){
 	}
 }
 
+// Initializes the database
+function initializeDatabase(settings){
+    fs.readFile(process.cwd()+"/configuration/database_setup.sql", 'utf8', function(err, data){
+        db.run(data);
+    });
+}
+
+function linkUser(discordId, fafId){
+    db.run("INSERT INTO account_links (faf_id, discord_id) VALUES ("+fafId+", '"+discordId+"')");
+}
+
+function link(message, username){
+    if (linker.isLinking()){
+        sendMessage(message.author, "Another user is currently linking their account. Please try again in a minute.");
+        return;
+    }
+
+    ifLinked(message.author.id, function(isLinked){
+        if (!isLinked){
+            linker.start();
+            sendMessage(message.author, "You have requested to link account with faf account `"+username+"`. To proceed, please open the address "+linker.getAddress()+" in your browser and log-in.\nYou have **30 SECONDS** before the link expires.");
+            linker.status.on("success", function(login, id){
+                if (login == username){
+                    linkUser(message.author.id, id);
+                    utils.log(login+" has been linked to discord user "+id, '--', message.guild);
+                    sendMessage(message.author, "The FAF user `"+login+"` has successfully been linked with your discord account. :slight_smile:");
+                }
+                else{
+                    sendMessage(message.author, "The FAF username `"+login+"` is different from the username provided (`"+username+"`). No link could be established.");
+                }
+                sendMessage(message.author, "You can now safely close your log-in browser tab.");
+                linker.cleanListeners();
+            });
+            linker.status.on("expired", function(){
+                sendMessage(message.author, "The link has expired");
+                linker.cleanListeners();
+            });
+        }
+        else{
+            sendMessage(message.author, "Your discord account is already linked to a FAF account.");
+        }                
+    });
+}
+
+function ifLinked(discord_id, callback){
+    db.get("SELECT faf_id FROM account_links WHERE discord_id="+discord_id, function(err, row){
+        callback(!err && row != undefined);
+    });
+}
 
 module.exports = {
 	
-	COMMAND_SUCCCESS:COMMAND_SUCCCESS,
+	COMMAND_SUCCESS:COMMAND_SUCCESS,
 	COMMAND_COOLDOWN:COMMAND_COOLDOWN,
 	COMMAND_UNKNOWN:COMMAND_UNKNOWN,
 	COMMAND_MISUSE:COMMAND_MISUSE,
@@ -1535,4 +1610,12 @@ module.exports = {
 	function(settings){
 		return initializeIrc(settings);
 	},
+    initializeDatabase:
+    function (settings){
+        return initializeDatabase(settings);
+    },
+    stopIrc:
+    function(settings, errName){
+        return stopIrc(settings, errName);
+    }
 };

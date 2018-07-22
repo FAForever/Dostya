@@ -29,7 +29,8 @@ client.on('ready', () => {
 	utils.log('Dostya ready !');
 	client.user.setActivity("!help");
 	refreshReceivers(settings, client);
-	behavior.initializeIrc(settings)
+	behavior.initializeIrc(settings);
+    behavior.initializeDatabase(settings);
 });
 
 /// Client error
@@ -94,7 +95,7 @@ client.on('message', message => {
 					break;
 				
 				/// 0 means the command executed gracefully
-				case behavior.COMMAND_SUCCCESS:
+				case behavior.COMMAND_SUCCESS:
 					utils.log("EOI with "+message.author.username+"", "OK", message.guild);
 					behavior.startCooldown(settings, currentCooldown, message.guild.id);
 					break;
@@ -136,6 +137,7 @@ process.on('uncaughtException', function(err) {
 
 process.on('SIGINT', function() {
     utils.log("SIGINT - Exiting", "XX")
+    behavior.stopIrc(settings, "Dostya killed from terminal");
     process.exit();
 });
 
