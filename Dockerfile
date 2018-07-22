@@ -22,3 +22,5 @@ RUN yarn
 COPY . .
 
 CMD [ "node", "launch.js" ]
+
+EXPOSE 3003
