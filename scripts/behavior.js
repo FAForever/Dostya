@@ -8,14 +8,17 @@
 const Discord = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require("fs");
+const he = require('he');
 
 const ircUplink = require('./irc_uplink.js');
 const linker = require('./faf_account_linking.js');
+const rss = require('./rss_feed.js');
 const utils = require('./utility.js');
 
 const db = new sqlite3.Database(process.cwd()+'/_private/userdata.db');
 
 let receivers = [];
+let announcers = [];
 let lastAnimatedMessage = {};
 let lastIrcMessage;
 let ircRestarting = false;
@@ -184,7 +187,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					.then(callback(COMMAND_SUCCESS));
 				break;
 				
-			case "def":		/// !def array mods @Moderators,@Admins
+			case "def":		/// !def announcement-channels array #test
 			case "define":
 				if (arguments == null){
 					callback(COMMAND_MISUSE);
@@ -277,6 +280,27 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+function initializeRss(settings){
+    rss.initialize(settings);
+    rss.status.on('newArticle', function (article){
+        let message = '';
+        message += '**'+he.decode(article.title)+'** - ('+article.author+')'+'\n';
+        message += article.link +'\n\n';
+        message += he.decode(utils.stripTags(article.description.replace(/<br \/>/g, '\n')))+'\n';
+        message += '\n(Published ' + article.pubDate+')';
+        
+        for (let k in announcers){
+            const announcer = announcers[k];
+            const limit = 1999; // Discord messages are limited to 2000 characters
+            for (i = 0; i < message.length/limit; i+= 1){
+                let cut = message.substr(i*limit, (i+1)*limit);
+                sendMessage(announcer, cut);
+            }
+        }
+        
+    });
+}
 
 /// Initializes IRC connection
 function initializeIrc(settings){
@@ -813,6 +837,16 @@ function addToReceivers(ircChannel, channelObject){
         receivers[ircChannel] = [];
     }
 	receivers[ircChannel].push(channelObject);
+}
+
+/// Clears the announcers list
+function cleanAnnouncers(){
+	announcers = [];
+}
+
+/// Add to the list of announcer channels - channels that will receive RSS news
+function addToAnnouncers(channelObject){
+	announcers.push(channelObject);
 }
 
 /// Adds a little V reaction on the last successfully sent message to the irc
@@ -1453,10 +1487,6 @@ function animateCooldown(message, cooldown){
 function sendMessage(channel, msgContent){
 	let canSend = true;
 	
-	if (Number.isInteger(channel)){
-		channel = client.channels.get(channel);
-	}
-	
 	if (channel instanceof Discord.Channel){
 		const myPermissions = channel.permissionsFor(channel.guild.me);
 		canSend = myPermissions.has('SEND_MESSAGES');
@@ -1566,6 +1596,10 @@ module.exports = {
 	function(ircChannel, receiverChannel){
 		return addToReceivers(ircChannel, receiverChannel);
 	},
+	addToAnnouncers:
+	function(receiverChannel){
+		return addToAnnouncers(receiverChannel);
+	},
    startCooldown: 
 	function(settings, cooldownObject, guildId){
 		return startCooldown(settings, cooldownObject, guildId);
@@ -1602,9 +1636,13 @@ module.exports = {
 	function(message, settings){
 		return aliasCommand(message, settings);
 	},
-   cleanReceivers: 
+    cleanReceivers: 
 	function(){
 		return cleanReceivers();
+	},
+    cleanAnnouncers: 
+	function(){
+		return cleanAnnouncers();
 	},
 	initializeIrc:
 	function(settings){
@@ -1613,6 +1651,10 @@ module.exports = {
     initializeDatabase:
     function (settings){
         return initializeDatabase(settings);
+    },
+    initializeRss:
+    function (settings){
+        return initializeRss(settings);
     },
     stopIrc:
     function(settings, errName){

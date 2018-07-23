@@ -1,5 +1,5 @@
 //EXPORTS AT EOF
-const settings = require("../configuration/settings.json");
+const settings = require(process.cwd()+"/configuration/settings.json");
 const trackerfile = "tracker.txt";
 const specificsFile = "specifics.json";
 const logPath = "./_private/logs";
@@ -407,6 +407,17 @@ function isNumeric(str){
 	}
 	return true;     
 }
+
+function stripTags(str){
+    if ((str===null) || (str==='')){
+        return false;
+    }
+    else{
+        str = str.toString();
+    }
+    return str.replace(/<[^>]*>/g, '');
+}
+
 //EXPORTS FOR SHARED USE
 module.exports = {
    log: 
@@ -478,5 +489,9 @@ module.exports = {
     checkToken:
     function (privatePath, tokenPath) {
         return checkToken(privatePath, tokenPath);
-    }	
+    },
+    stripTags:
+    function (str){
+        return stripTags(str);
+    }
 }

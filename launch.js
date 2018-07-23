@@ -16,10 +16,8 @@ utils.checkToken(privateDir, tokenPath);
 
 const token = require(tokenPath);
 const settings = require('./configuration/settings.json');
-const databaseFile = privateDir+'/userdata.db';  
 
 /// Variable initialization
-//let db = new sqlite3.Database(databaseFile);  
 let currentCooldown = {};
 
 utils.log('Dostya launched ! Preparing...');
@@ -29,8 +27,10 @@ client.on('ready', () => {
 	utils.log('Dostya ready !');
 	client.user.setActivity("!help");
 	refreshReceivers(settings, client);
+    refreshAnnouncers(settings, client);
 	behavior.initializeIrc(settings);
     behavior.initializeDatabase(settings);
+    behavior.initializeRss(settings);
 });
 
 /// Client error
@@ -47,15 +47,18 @@ client.on('disconnect', () => {
 client.on('guildCreate', guild =>{
 	utils.log('Dostya has been added to guild '+guild.name+'', '!!');
 	refreshReceivers(settings, client);
+    refreshAnnouncers(settings, client);
 });
 client.on('channelCreate', guild=>{
     if (guild.name != undefined){
         /// If guild.name is undefined, it is very likely this "channel" is a PM channel. No need to refresh the IRC receivers in that case.
         refreshReceivers(settings, client);
+        refreshAnnouncers(settings, client);
     }
 });
 client.on('channelDelete', guild=>{
 	refreshReceivers(settings, client);
+    refreshAnnouncers(settings, client);
 });
 
 /// Adding guildmember
@@ -126,7 +129,6 @@ client.on('message', message => {
 	
 });
 
-
 //ON EXCEPTION
 process.on('uncaughtException', function(err) {
   utils.log('-------------------------', 'XX');
@@ -138,7 +140,7 @@ process.on('uncaughtException', function(err) {
 process.on('SIGINT', function() {
     utils.log("SIGINT - Exiting", "XX")
     behavior.stopIrc(settings, "Dostya killed from terminal");
-    process.exit();
+    setTimeout(function(){process.exit()}, 1000);
 });
 
 function refreshReceivers(settings, client){
@@ -151,9 +153,23 @@ function refreshReceivers(settings, client){
                 const channel = guild.channels.find("name", k);
                 if (channel != null && channel.type == "text"){
                     behavior.addToReceivers(k, channel);
-                    utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>");
+                    utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>", guild);
                 }
             }
+        }
+    }
+}
+function refreshAnnouncers(settings, client){
+    const guilds = client.guilds;
+    behavior.cleanAnnouncers();
+    for (const guild of guilds.values()){
+        const specs = utils.getSpecifics(guild);
+        const channelIds = specs['announcement-channels'];
+        for (l in channelIds){
+            const channelId = utils.getIdFromString(channelIds[l]);
+            const channel = guild.channels.find('id', channelId);
+            behavior.addToAnnouncers(channel);
+            utils.log("Added ["+guild.name+"] #"+channel.name+" to announcers", ">>", guild);
         }
     }
 }
