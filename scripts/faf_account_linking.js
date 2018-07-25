@@ -15,53 +15,61 @@ const OAuth2Strategy = require('passport-oauth2');
 const path = require('path');
 
 const credentialsPath = process.cwd()+'/_private/session.json';
-try{ 
+try{
     fs.accessSync(credentialsPath);
 }
 catch(e){
-    fs.writeFileSync(credentialsPath, '{"clientSecret":"ABC","clientId":"DEF","sessionSecret":"GHI"}');
+    fs.writeFileSync(credentialsPath, JSON.stringify({'clientSecret':'ABC','clientId':'DEF','sessionSecret':'GHI'}));
 }
 const fafCredentials = require(credentialsPath);
-utils.log("Loaded client ID "+fafCredentials.clientId+"", "--", fakeGuild);
+utils.log('Loaded client ID '+fafCredentials.clientId+'', '--', fakeGuild);
 const settings = require(process.cwd()+'/configuration/settings.json');
 
 const port = 3003;
 let server;
-let addr = settings.urls.auth; 
-let callbackUrl = 'http://'+addr+':'+port+'/auth';
+let addr = settings.urls.auth;
+let callbackUrl = 'http://' + addr + ':' + port + '/auth';
 /*
 getIP((err, result) => {
     if (err) {
         // every service in the list has failed
-        utils.log("Could not resolve host IP", "WW", fakeGuild);
+        utils.log('Could not resolve host IP', 'WW', fakeGuild);
         throw err;
     }
     ip = result;
     callbackUrl = 'http://'+ip+':'+port+'/auth';
-    utils.log("Found ip : "+ip+"", "--", fakeGuild);
+    utils.log('Found ip : '+ip+'', '--', fakeGuild);
 });
 */
 const EventEmitter = require('events');
+const crypto = require('crypto');
 const status = new EventEmitter();
- 
+
 const clientId = fafCredentials.clientId;
 const clientSecret = fafCredentials.clientSecret;
 const sessionSecret = fafCredentials.sessionSecret;
 
-let timeout;
+let server_started = false;
+let current_tokens = {};
 
-function start (){    
-    clearTimeout(timeout);
-    timeout = setTimeout(function(){
-        status.emit('expired');
-        server.close();
-        utils.log('Closed web server.', '--', fakeGuild);
-    }, 30000);
-    
+
+/**
+ * generateRandomToken - Create a randomized token
+ * for each player. Should be unique.
+ *
+ * @return {string}  Randomized token
+ */
+function generateRandomToken() {
+    return crypto.randomBytes(80).toString('hex');
+}
+
+function start (){
+    server_started = true;
+
     app.use(session({
-        "secret": sessionSecret,
-        "resave": true,
-        "saveUninitialized": true
+        'secret': sessionSecret,
+        'resave': true,
+        'saveUninitialized': true
       })
     );
 
@@ -108,34 +116,36 @@ function start (){
         res.redirect('/');
       }
     );
-    app.get('/',
+    app.get('/token/*',
       function (req, res, next) {
         if (req.isAuthenticated()) {
-          const login = req.user.data.attributes.login;
-          const id = req.user.data.id;
-          status.emit('success', login, id);
-          server.close();
-          utils.log('Closed web server.', '--', fakeGuild);
+            let token = req.url.split('/token/')[1];
+
+            if (!current_tokens[token]) {
+                res.send('Token expired or does not exist.', 403);
+                return;
+            }
+
+            let author_id = current_tokens[token];
+
+            const login = req.user.data.attributes.login;
+            const id = req.user.data.id;
+            status.emit('success', login, id, author_id);
+
+            delete current_tokens[token];
         } else {
-          res.redirect("/login");
+            res.redirect('/login');
         }
       }
     );
 
     app.get('/login', function (req, res) {
-      res.redirect(settings.urls.api + "oauth/authorize?client_id=" + clientId + "&response_type=code&redirect_uri=" + encodeURIComponent(callbackUrl));
+      res.redirect(settings.urls.api + 'oauth/authorize?client_id=' + clientId + '&response_type=code&redirect_uri=' + encodeURIComponent(callbackUrl));
     });
 
     server = app.listen(port, function () {
-      utils.log('Listening on port '+port+'', '!!', fakeGuild);
+      utils.log('Listening on port '+ port + '', '!!', fakeGuild);
     });
-}
-
-function isLinking(){
-    if (server == undefined){
-        return false;
-    }
-    return server.address() != null;
 }
 
 function cleanListeners(){
@@ -143,18 +153,31 @@ function cleanListeners(){
     status.removeAllListeners("expired");
 }
 
+
 module.exports = {
-    status:status,
-    start:function(){
-        return start();
+    status: status,
+    start: () => {
+        if (!server_started) {
+            start();
+        }
     },
-    isLinking:function(){
-        return isLinking();
+    getAddress: (id) => {
+        let token = generateRandomToken();
+        current_tokens[token] = id;
+
+        // Invalidate token after 30 seconds
+        setTimeout(() => {
+            status.emit('expired', current_tokens[token]);
+            delete current_tokens[token];
+
+            // No more active tokens
+            if (Object.keys(current_tokens).length === 0) {
+                server.close();
+                cleanListeners();
+            }
+        }, 30 * 1000);
+
+        return 'http://' + addr + ':' + port + '/token/' + token;
     },
-    getAddress:function(){
-        return 'http://'+addr+':'+port+'/';
-    },
-    cleanListeners:function(){
-        return cleanListeners();
-    }
+    cleanListeners: () => cleanListeners()
 }
