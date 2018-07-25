@@ -2,7 +2,7 @@
 	"debug-mode": false,
 	"dev-only-mode": false,
 	"dev-only-commands": ["def", "logs", "kill"],
-	"devs": ["142367571256147968", "234804893653663745"],
+	"devs": ["142367571256147968"],
     "allowed-bridges":{
     },
 	"prefixes": ["!", "Dostya! "],
