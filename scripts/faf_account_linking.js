@@ -131,6 +131,8 @@ function start (){
             const login = req.user.data.attributes.login;
             const id = req.user.data.id;
             status.emit('success', login, id, author_id);
+
+            delete current_tokens[token];
         } else {
             res.redirect('/login');
         }
@@ -144,6 +146,11 @@ function start (){
     server = app.listen(port, function () {
       utils.log('Listening on port '+ port + '', '!!', fakeGuild);
     });
+}
+
+function cleanListeners(){
+    status.removeAllListeners("success");
+    status.removeAllListeners("expired");
 }
 
 
@@ -161,6 +168,13 @@ module.exports = {
         // Invalidate token after 30 seconds
         setTimeout(() => {
             delete current_tokens[token];
+            status.emit('expired');
+
+            // No more active tokens
+            if (Object.keys(current_tokens).length === 0) {
+                server.close();
+                cleanListeners();
+            }
         }, 30 * 1000);
 
         return 'http://' + addr + ':' + port + '/token/' + token;

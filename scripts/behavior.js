@@ -1564,8 +1564,10 @@ function link(message, username){
                 }
                 sendMessage(message.author, "You can now safely close your log-in browser tab.");
             });
-            linker.status.on("expired", function(){
-                sendMessage(message.author, "The link has expired");
+            linker.status.on("expired", function(author_id) {
+				if (author_id === message.author.id) {
+                	sendMessage(message.author, "The link has expired");
+				}
             });
         }
         else{
