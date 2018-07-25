@@ -16,7 +16,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`map <mapID/mapName>`|Returns an embed preview of the map and a link to download it |
 |`wiki <searchTerms>`|Performs a search on the faforever wiki and returns the first result     |
 |`pool/ladderpool/ladder`          |Returns the current map pool for the 1v1 ladder|
-|`replay <replayID>`|Returns a short résumé and a link to the replay given|
+|`replay <replayID>`|Returns a short rï¿½sumï¿½ and a link to the replay given|
 |`lastreplay <fafPlayerName>`|Returns the `!replay` of the last game played by the given user |
 |`clan <fafClanTag/fafClanName>`|Returns information about the clan given     |
 |`searchplayer <searchTerms>`| Returns a list of users whose username corresponds to the search term. Supports wildcard.   |
@@ -61,13 +61,13 @@ Input the following :
 ```
 {
   "token": "mySecretToken"
-} 
+}
 ```
 ### Setting up advanced parameters
 Inside the `configuration/` folder you can find a `settings.json` that you can modify for additional functionnality. This file will be automatically created.
 
 ### Run the bot
-Fire `node init_bot.js` and you should be good to go.
+Fire `node launch.js` and you should be good to go.
 
 ### Setting up moderators for a specific guild
 - Add your Discord ID to the `devs` property inside the `configuration/` folder
