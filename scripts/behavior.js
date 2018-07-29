@@ -9,6 +9,7 @@ const Discord = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require("fs");
 const he = require('he');
+const fetch = require("node-fetch");
 
 const ircUplink = require('./irc_uplink.js');
 const linker = require('./faf_account_linking.js');
@@ -268,10 +269,13 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					break;
 				}
                 const username = escapeArguments(arguments);
-                
                 link(message, username);
-                
                 callback(COMMAND_SUCCESS);
+                break;
+                
+            case "showlinks":
+                sendLinktable(message.channel, settings)
+                .then(callback(COMMAND_SUCCESS));
                 break;
 		}
 	}
@@ -280,6 +284,25 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+async function sendLinktable(channel, settings){
+    return db.all('SELECT * FROM account_links ORDER BY create_time', async function(err, rows){
+        if (err){
+            utils.log("Error fetching rows for account linking", "WW", channel.guild);
+            console.log(err);
+            return;
+        }
+        let message = '```FAF:ID => Discord:Id```\n';
+        for (let k in rows){
+            const response = await fetch(settings.urls.data+'player?filter=id=='+rows[k].faf_id+'&fields[player]=login');
+            const json = await response.json();
+            const playerName = json.data[0].attributes.login;
+            const userName = await channel.guild.members.get(rows[k].discord_id).user.username;
+            message += "```"+playerName+":"+rows[k].faf_id+" => "+userName+":"+rows[k].discord_id+"```\n";
+        }
+        sendMessage(channel, message);
+    });
+}
 
 function initializeRss(settings){
     rss.initialize(settings);
@@ -1558,7 +1581,7 @@ function link(message, username){
             linker.status.on("success", function(login, id){
                 if (login == username){
                     linkUser(message.author.id, id);
-                    utils.log(login+" has been linked to discord user "+id, '--', message.guild);
+                    utils.log(login+":"+id+" has been linked to discord user "+message.author.username+":"+message.author.id, '--', message.guild);
                     sendMessage(message.author, "The FAF user `"+login+"` has successfully been linked with your discord account. :slight_smile:");
                 }
                 else{
