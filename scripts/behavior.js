@@ -307,7 +307,12 @@ async function sendLinktable(channel, settings){
                 userName = '<unknown>';
             }
             finally{
-                message += "```"+playerName+":"+rows[k].faf_id+" => "+userName+":"+rows[k].discord_id+"```";
+                const line = "```"+playerName+":"+rows[k].faf_id+" => "+userName+":"+rows[k].discord_id+"```";
+                if (message.length + line.length >= 2000){
+                    sendMessage(channel, message);
+                    message = '';
+                }
+                message += line;
             }
         }
         sendMessage(channel, message);
