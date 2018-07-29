@@ -23,6 +23,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`player/ratings <fafPlayerName>`| Returns an embed preview of the player's avatar and information about the player |
 |`sendtracker/tracker`| PMs the tracker file to the user |
 |`restrictions`| PMs the restricted commands list to the user |
+|`link <fafPlayerName>`| Links the discord user account to the FAF player account given |
 
 ### Moderator commands
 |       Usage         |Effect                         |
@@ -33,6 +34,7 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`restrict <command>`|Prevents anyone from firing the command, except Mods          |
 |`unrestrict <command>`|Remove the command from the restrictions list|
 |`fixbridge`|Reinitializes the connection to all IRC bridges established|
+|`showlinks`|Display a list showing which user is linked to which faf account|
 
 ### Developer commands
 |       Usage         |Effect                         |

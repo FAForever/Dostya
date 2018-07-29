@@ -23,7 +23,7 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge"],
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "showlinks"],
         "announcement-channels":[]
 	}
 }
