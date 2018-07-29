@@ -300,7 +300,7 @@ async function sendLinktable(channel, settings){
             let userName;
             const getMember = await channel.guild.members.get(rows[k].discord_id)
             try{
-                userName = getMember.user.username;
+                userName = getMember.user.username+"#"+getMember.user.tag;
             }
             catch(e){
                 // User is probably banned or left from this discord
