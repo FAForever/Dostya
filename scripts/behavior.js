@@ -1164,7 +1164,7 @@ function fetchReplay(command, replayIdOrName, apiUrl, callback){
 					"inline": true
 				  },
 				  {
-					"name": "Ranked",
+					"name": "Map is ranked",
 					"value": replay.ranked.toString(),
 					"inline": true
 				  },
