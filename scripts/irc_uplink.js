@@ -35,10 +35,28 @@ function initializeClient(callback){
 	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'kick'];
 	
     for (let i = 0; i < errors.length; i++){
-        client.on(errors[i], function(message) {
+        client.on(errors[i], function(message, a, b, c, d) {
             if (!reinitializing){
-                utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Connection presumably dropped.', 'WW', fakeGuild);
-                status.emit("connectionClosed", errors[i]);
+                switch (errors[i]){
+                    default:
+                        utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Connection presumably dropped.', 'WW', fakeGuild);
+                        status.emit("connectionClosed", errors[i]);
+                        break;
+                    
+                    case "kick":
+                        if (a === client.nick){
+                            utils.log('IRC kicked. Connection presumably dropped.', 'WW', fakeGuild);
+                            status.emit("connectionClosed", errors[i]);
+                        }
+                        break;
+                    
+                    case "kill":
+                        if (message === client.nick){
+                            utils.log('IRC kicked. Connection presumably dropped.', 'WW', fakeGuild);
+                            status.emit("connectionClosed", errors[i]);
+                        }
+                        break;
+                }
             }
         });
     }

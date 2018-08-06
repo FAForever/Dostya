@@ -35,6 +35,8 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`unrestrict <command>`|Remove the command from the restrictions list|
 |`fixbridge`|Reinitializes the connection to all IRC bridges established|
 |`showlinks`|Display a list showing which user is linked to which faf account|
+|`unlink <@user/fafId>`|Breaks the link between a discord user and a faf account|
+|`loghere`|Registers the current channel for moderator actions logging|
 
 ### Developer commands
 |       Usage         |Effect                         |
@@ -69,7 +71,7 @@ Input the following :
 Inside the `configuration/` folder you can find a `settings.json` that you can modify for additional functionnality. This file will be automatically created.
 
 ### Run the bot
-Fire `node init_bot.js` and you should be good to go.
+Fire `npm start` and you should be good to go.
 
 ### Setting up moderators for a specific guild
 - Add your Discord ID to the `devs` property inside the `configuration/` folder

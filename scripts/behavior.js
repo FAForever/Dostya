@@ -277,6 +277,23 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 sendLinktable(message.channel, settings)
                 .then(callback(COMMAND_SUCCESS));
                 break;
+                
+            case "unlink":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}
+                unlink(arguments, message.guild, function(){callback(COMMAND_SUCCESS);});
+                break;
+                
+            case "loghere":
+                let specifics = utils.getSpecifics(message.guild);
+                specifics['moderator-log-channel'] = message.channel.id;
+                utils.writeSpecifics(message.guild, specifics);
+                utils.log('Registered #'+message.channel.name+' for logging', '>>', message.guild);
+                logForModerators(message.guild, "Registered `"+message.channel.name+"` for logging");
+                callback(COMMAND_SUCCESS);
+                break;
 		}
 	}
 }
@@ -285,6 +302,42 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 ///
 ///////////////
 
+/// Breaks link between discord user and faf user, and logs in moderator room of the guild
+function unlink(discordTagOrFafId, guild, callback){
+    let fafId = "-1";
+    let discordId = "-1";
+    
+    // FAF ID
+    if (utils.isNumeric(discordTagOrFafId)){
+        fafId = discordTagOrFafId;
+    }
+    
+    // Discord ping
+    else if (discordTagOrFafId.substr(0,1) === "<"){
+        discordId = utils.getIdFromString(discordTagOrFafId);
+        let stop = false;
+        ifLinked(discordId, function(isLinked){
+            if (!isLinked){
+                stop = true;
+            }           
+        });
+        if (stop){
+            callback(false);
+            return;
+        }
+    }
+    
+    // Command misuse
+    else{
+        callback(false);
+        return;
+    }
+    
+    db.run("DELETE FROM account_links WHERE faf_id="+fafId+" OR discord_id='"+discordId+"'", callback)
+    logForModerators(guild, "Account unlinked ("+fafId+"<>"+discordId+")");
+}
+
+/// Display link table in a channel with ASCII character
 async function sendLinktable(channel, settings){
     return db.all('SELECT * FROM account_links ORDER BY create_time', async function(err, rows){
         if (err){
@@ -319,6 +372,7 @@ async function sendLinktable(channel, settings){
     });
 }
 
+/// Initializes RSS articles fetching and announcer channels
 function initializeRss(settings){
     rss.initialize(settings);
     rss.status.on('newArticle', function (article){
@@ -917,7 +971,7 @@ function uplink(ircChannel, message, settings){
                 }
                 else{
                     message.react("❌");
-                    sendMessage(message.author, "You must link your discord account to FAF to use #"+ircChannel+" with the bridge.\nUse the `!link` command to link your account.");
+                    sendMessage(message.author, "You must link your discord account to FAF to use #"+ircChannel+" with the bridge.\nUse the `!link fafAccountName` command to link your account.");
                 }
             });
             return ok;
@@ -1583,31 +1637,46 @@ function linkUser(discordId, fafId){
     db.run("INSERT INTO account_links (faf_id, discord_id) VALUES ("+fafId+", '"+discordId+"')");
 }
 
-function link(message, username){
-    if (linker.isLinking()){
-        sendMessage(message.author, "Another user is currently linking their account. Please try again in a minute.");
-        return;
+function logForModerators(guild, message){
+    let specifics = utils.getSpecifics(guild);
+    if (guild.channels.exists("id", specifics['moderator-log-channel'])){
+        const modLog = guild.channels.find("id", specifics['moderator-log-channel']);
+        sendMessage(modLog, message);
     }
+    else{
+        specifics['moderator-log-channel'] = null;
+        utils.writeSpecifics(guild, specifics);
+    }
+}
 
+function link(message, username){
     ifLinked(message.author.id, function(isLinked){
         if (!isLinked){
-            linker.start();
-            sendMessage(message.author, "You have requested to link account with faf account `"+username+"`. To proceed, please open the address "+linker.getAddress()+" in your browser and log-in.\nYou have **30 SECONDS** before the link expires.");
-            linker.status.on("success", function(login, id){
-                if (login == username){
-                    linkUser(message.author.id, id);
-                    utils.log(login+":"+id+" has been linked to discord user "+message.author.username+":"+message.author.id, '--', message.guild);
-                    sendMessage(message.author, "The FAF user `"+login+"` has successfully been linked with your discord account. :slight_smile:");
-                }
-                else{
-                    sendMessage(message.author, "The FAF username `"+login+"` is different from the username provided (`"+username+"`). No link could be established.");
-                }
-                sendMessage(message.author, "You can now safely close your log-in browser tab.");
-                linker.cleanListeners();
-            });
-            linker.status.on("expired", function(){
-                sendMessage(message.author, "The link has expired");
-                linker.cleanListeners();
+            linker.start(message.author.id)
+            .then(function(address){
+                sendMessage(message.author, "You have requested to link account with faf account `"+username+"`. To proceed, please open the address "+address+" in your browser and log-in.\nYou have **30 SECONDS** before the link expires.");
+                linker.status.on("success", function(login, fafId, discordId){
+                    if (discordId == message.author.id){
+                        if (login == username){
+                            linkUser(discordId, fafId);
+                            const logMessage = "`"+login+":"+fafId+"` has been linked to discord user `"+message.author.tag+":"+discordId+"`";
+                            sendMessage(message.author, "The FAF user `"+login+"` has successfully been linked with your discord account. :slight_smile:");
+                            utils.log(logMessage, '--', message.guild);
+                            
+                            // Notice the moderation channel
+                            logForModerators(guild, logMessage);
+                        }
+                        else{
+                            sendMessage(message.author, "The FAF username `"+login+"` is different from the username provided (`"+username+"`). No link could be established.");
+                        }
+                        sendMessage(message.author, "You can now safely close your log-in browser tab.");
+                    }
+                });
+                linker.status.on("expired", function(discordId){
+                    if (discordId == message.author.id){
+                        sendMessage(message.author, "The link has expired");
+                    }
+                });
             });
         }
         else{

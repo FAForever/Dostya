@@ -8,6 +8,7 @@
 	"prefixes": ["!", "Dostya! "],
 	"write-logs": true,
 	"cooldown": 30,
+	"link-cooldown":30,
 	"player-search-limit": 5,
 	"aliases": {
 		"#": "!replay "
@@ -17,13 +18,14 @@
 		"wiki": "https://wiki.faforever.com/",
 		"api": "https://api.faforever.com/",
 		"data": "https://api.faforever.com/data/",
-        "auth": "address-of-server-hosting-dostya.com",
+        "auth": "address-of-dostya-host",
         "rss": "http://direct.faforever.com/feed/"
 	},
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "showlinks"],
-        "announcement-channels":[]
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "showlinks", "unlink", "loghere"],
+        "announcement-channels":[],
+		"moderator-log-channel":null
 	}
 }
