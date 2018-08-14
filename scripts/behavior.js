@@ -281,6 +281,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 callback(COMMAND_SUCCESS);
                 break;
                 
+            case "links":
             case "showlinks":
                 sendLinktable(message.channel, settings)
                 .then(callback(COMMAND_SUCCESS));
@@ -332,6 +333,12 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 addRecord(message.guild, settings, recording[0], recording[1]);
                 callback(COMMAND_SUCCESS);
                 break;
+                
+            case "showrecords":
+            case "records":
+                sendRecords(message.channel, settings);
+                callback(COMMAND_SUCCESS);
+                break;
 		}
 	}
 }
@@ -340,13 +347,38 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 ///
 ///////////////
 
+/// Sends records on this channel 
+function sendRecords(channel, settings){
+    let message = '```';
+    const specs = utils.getSpecifics(channel.guild);
+    for (let k in specs["recorded-messages"]){
+        const cmd = settings["prefixes"][0]+k;
+        const content = specs["recorded-messages"][k];
+        
+        const line = cmd+" => "+content+"";
+        
+        if (message.length + line.length >= 2000){
+            sendMessage(channel, message+"```");
+            message = '```';
+        }
+        message += line;
+    }
+    sendMessage(channel, message+"```");
+}
+
 /// Adds a recording to play with a user-registered command.
 function addRecord(guild, settings, key, message){
     let guildSpecifics = utils.getSpecifics(guild);
     if (!guildSpecifics['recorded-messages']){
         guildSpecifics['recorded-messages'] = {};
     }
+    
+    // Cloning existing record
+    if (guildSpecifics['recorded-messages'][message]){
+        message = guildSpecifics['recorded-messages'][message];
+    }
     guildSpecifics['recorded-messages'][key] = message;
+    
     utils.writeSpecifics(guild, guildSpecifics);
     logForModerators(guild, "Added recording ["+settings["prefixes"][0]+key+"] => "+message+"");    
 }

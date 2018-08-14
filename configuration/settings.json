@@ -24,8 +24,9 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "showlinks", "unlink", "loghere"],
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords"],
         "announcement-channels":[],
-		"moderator-log-channel":null
+		"moderator-log-channel":null,
+        "recorded-messages":{}
 	}
 }

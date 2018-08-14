@@ -34,9 +34,13 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`restrict <command>`|Prevents anyone from firing the command, except Mods          |
 |`unrestrict <command>`|Remove the command from the restrictions list|
 |`fixbridge`|Reinitializes the connection to all IRC bridges established|
-|`showlinks`|Display a list showing which user is linked to which faf account|
+|`links/showlinks`|Display a list showing which user is linked to which faf account|
 |`unlink <@user/fafId>`|Breaks the link between a discord user and a faf account|
 |`loghere`|Registers the current channel for moderator actions logging|
+|`testlog`|Outputs a test message in the moderator logging channel|
+|`record <command> <message>`|Records a predefined message that will show up next time anyone fires the <command>|
+|`record <command>`|Deletes the message associated with the <command>|
+|`records/showrecords`|Lists the recorded messages|
 
 ### Developer commands
 |       Usage         |Effect                         |
