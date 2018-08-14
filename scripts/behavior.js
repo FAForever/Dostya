@@ -39,14 +39,15 @@ const COMMAND_FORBIDDEN = 4;
 ///
 function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
 	
-	const cooldownWhitelist = ["respond", "alive", "unit", "searchunit", "wiki", "pool", "ladderpool", "ladder", "mappool", "ladder", "replay", "lastreplay", "clan", "player", "ratings", "searchplayer", "restrictions", "map"];
+    // These commands won't be affected by cooldown
+	const cooldownWhitelist = [];
 	const developer = isDeveloper(message.author, settings);
 	
 	if (!developer &&  settings["dev-only-mode"]){
 		utils.log(message.author.username+" tried to fire command while in dev-only mode", "!!", message.guild);
 		callback(COMMAND_FORBIDDEN);
 	}
-	else if (!developer && cooldown > 0 && cooldownWhitelist.indexOf(command) > -1){
+	else if (!developer && cooldown > 0 && cooldownWhitelist.indexOf(command) < 0){
 		/// Animates cooldown
 		animateCooldown(message, cooldown);
 		callback(COMMAND_COOLDOWN);

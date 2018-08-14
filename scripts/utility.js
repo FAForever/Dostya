@@ -205,6 +205,10 @@ function httpsFetch(address, function_callback){
 			case 500:
 				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
 				break;
+				
+			case 504:
+				log("["+address+"] ==> Server error ?! 504 - doing nothing.", "WW");
+				break;
 		}
 		
 		if (ok){
