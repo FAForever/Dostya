@@ -80,6 +80,7 @@ client.on('message', message => {
 	/// IRC transmission - if needed
     if (settings['allowed-bridges'][message.channel.name] != undefined){
         behavior.uplink(message.channel.name, message, settings);
+        return;
     }
 
 	/// Aliasing
