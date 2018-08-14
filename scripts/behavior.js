@@ -66,7 +66,14 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 	else{
 		switch (command){
 			default:
-				callback(COMMAND_UNKNOWN);
+                const specs = utils.getSpecifics(message.guild);
+                if (specs["recorded-messages"][command]){
+					sendMessage(message.channel, specs["recorded-messages"][command])
+					.then(callback(COMMAND_SUCCESS));
+                }
+                else{
+                    callback(COMMAND_UNKNOWN);
+                }
 				break;
 			
 			case "respond":
@@ -294,6 +301,36 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 logForModerators(message.guild, "Registered `"+message.channel.name+"` for logging");
                 callback(COMMAND_SUCCESS);
                 break;
+                
+            case "testlog":
+                logForModerators(message.guild, "This is the moderator logging channel");
+                callback(COMMAND_SUCCESS);
+                break;
+                
+            case "record":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}                
+				arguments = escapeArguments(arguments);
+                
+                const i = arguments.indexOf(" ");
+                const recording = [arguments.slice(0,i), arguments.slice(i+1)];
+                
+				if (i < 0){
+                    if (recording.length > 1){
+                        deleteRecord(message.guild, settings, arguments);
+                        callback(COMMAND_SUCCESS);
+                        break;
+                    }
+                    else{
+                        callback(COMMAND_MISUSE);
+                        break;
+                    }
+				}
+                addRecord(message.guild, settings, recording[0], recording[1]);
+                callback(COMMAND_SUCCESS);
+                break;
 		}
 	}
 }
@@ -301,6 +338,25 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+/// Adds a recording to play with a user-registered command.
+function addRecord(guild, settings, key, message){
+    let guildSpecifics = utils.getSpecifics(guild);
+    if (!guildSpecifics['recorded-messages']){
+        guildSpecifics['recorded-messages'] = {};
+    }
+    guildSpecifics['recorded-messages'][key] = message;
+    utils.writeSpecifics(guild, guildSpecifics);
+    logForModerators(guild, "Added recording ["+settings["prefixes"][0]+key+"] => "+message+"");    
+}
+
+/// Deletes an user registered recording
+function deleteRecord(guild, settings, key){
+    let guildSpecifics = utils.getSpecifics(guild);
+    delete guildSpecifics['recorded-messages'][key];
+    utils.writeSpecifics(guild, guildSpecifics);
+    logForModerators(guild, "Deleted recording ["+settings["prefixes"][0]+key+"]");
+}
 
 /// Breaks link between discord user and faf user, and logs in moderator room of the guild
 function unlink(discordTagOrFafId, guild, callback){
