@@ -468,7 +468,8 @@ function initializeRss(settings){
         let message = '';
         message += '**'+he.decode(article.title)+'** - ('+article.author+')'+'\n';
         message += article.link +'\n\n';
-        message += he.decode(utils.stripTags(article.description.replace(/<br \/>/g, '\n')))+'\n';
+        // Uncommented, the following line will display the news content decoded.
+        //message += he.decode(utils.stripTags(article.description.replace(/<br \/>/g, '\n')))+'\n';
         message += '\n(Published ' + article.pubDate+')';
         
         for (let k in announcers){
