@@ -41,6 +41,10 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`record <command> <message>`|Records a predefined message that will show up next time anyone fires the <command>|
 |`record <command>`|Deletes the message associated with the <command>|
 |`records/showrecords`|Lists the recorded messages|
+|`ban <user/userID> *<message> *><duration>`|Bans the user with the corresponding <message> (if provided) and the given >duration (if provided) in hours. The user will be unbanned automatically when the time comes.|
+|`kick <user/userID> *<message>`|Kicks the user with the corresponding <message> (if provided)|
+|`warn <user/userID> *<message>`|Warns the user with the corresponding <message> (if provided) or with an automatic warning message|
+|`userinfo <user/userID>`|Outputs in the moderator log channel the bans/kicks/warnings record of the given user.|
 
 ### Developer commands
 |       Usage         |Effect                         |

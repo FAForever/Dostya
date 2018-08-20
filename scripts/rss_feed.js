@@ -17,36 +17,45 @@ function initialize(settings){
                 utils.log("RSS Fatal error on initialization", "><", fakeGuild);
                 console.log(err);
            }
+           initialize(settings);
         });
     }
-    publications = require(pubFilePath);
-
-    const watcher = new Watcher(settings.urls.rss)
-    utils.log('RSS feed watcher listening for '+settings.urls.rss, '--', fakeGuild);
-    
-    watcher.on('new article', function(article){
-      if (!hasBeenPublished(article)){
-          utils.log('RSS feed watcher caught a new article.', '--', fakeGuild);
-          status.emit('newArticle', article);
-          addToPublished(article);
-      }
-    });
-
-    watcher.on('error', function(err){
-        utils.log('RSS feed watcher encountered an error. Follows :', 'WW', fakeGuild);
-        console.log(err);
-    });
-
-    watcher.run(function(err,articles){
-        for (k in articles){
-            const article = articles[k];
-            addToPublished(article);
+    else{
+        try{
+            publications = require(pubFilePath);
         }
-        if (err){
-            utils.log('RSS feed watcher encountered an error at initialization. Follows :', 'WW', fakeGuild);
+        catch(e){
+            utils.log("RSS Fatal error on initialization", "><", fakeGuild);
+            console.log(e);
+            return;
+        }
+        const watcher = new Watcher(settings.urls.rss)
+        utils.log('RSS feed watcher listening for '+settings.urls.rss, '--', fakeGuild);
+        
+        watcher.on('new article', function(article){
+          if (!hasBeenPublished(article)){
+              utils.log('RSS feed watcher caught a new article.', '--', fakeGuild);
+              status.emit('newArticle', article);
+              addToPublished(article);
+          }
+        });
+
+        watcher.on('error', function(err){
+            utils.log('RSS feed watcher encountered an error. Follows :', 'WW', fakeGuild);
             console.log(err);
-        }
-    });
+        });
+
+        watcher.run(function(err,articles){
+            for (k in articles){
+                const article = articles[k];
+                addToPublished(article);
+            }
+            if (err){
+                utils.log('RSS feed watcher encountered an error at initialization. Follows :', 'WW', fakeGuild);
+                console.log(err);
+            }
+        });
+    }
 }
 
 function addToPublished(article){

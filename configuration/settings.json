@@ -9,6 +9,7 @@
 	"write-logs": true,
 	"cooldown": 30,
 	"link-cooldown":30,
+    "ban-update-rate":60,
 	"player-search-limit": 5,
 	"aliases": {
 		"#": "!replay "
@@ -19,12 +20,12 @@
 		"api": "https://api.faforever.com/",
 		"data": "https://api.faforever.com/data/",
         "auth": "address-of-dostya-host",
-        "rss": "http://direct.faforever.com/feed/"
+        "rss": "https://lorem-rss.herokuapp.com/feed?unit=second&interval=10"
 	},
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords"],
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo"],
         "announcement-channels":[],
 		"moderator-log-channel":null,
         "recorded-messages":{}

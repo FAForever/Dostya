@@ -31,6 +31,7 @@ client.on('ready', () => {
 	behavior.initializeIrc(settings);
     behavior.initializeDatabase(settings);
     behavior.initializeRss(settings);
+    behavior.initializeBans(settings, client);
 });
 
 /// Client error

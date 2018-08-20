@@ -42,7 +42,7 @@ function log(message, type="--", guild=undefined){
 	guildColorType = uniqueNumber(guildName, 2);
 	guildColor = 30 + 60*guildColorType + guildColor;
 	const consoleString = "\x1B[2m["+time()+"]\x1B[0m \x1B["+guildColor+"m["+makeLong(guildName,logGuildNameLength)+"]\x1B[0m \x1B[7m["+type+"]\x1B[27m "+message;
-	if (type != '++' && (type !="DD" || settings['debug-log'])){
+	if (type != '++' && (type !="DD" || settings['debug-mode'])){
 		console.log(consoleString);
 	}
 	if (guild && settings["write-logs"]){
@@ -59,11 +59,6 @@ function log(message, type="--", guild=undefined){
 		const logString = "["+time()+"] ["+makeLong(guildName,logGuildNameLength*2)+"] ["+type+"] "+message;
 		fs.writeFileSync(fullPath, logContent+"\r\n"+logString, {"encoding":'utf8'});
 	}
-	/*
-	if (debugChat && consoleString){
-		globalChatStamp[guild] += "["+type+"] "+message+"\r\n";
-	}
-	*/
 }
 
 function getCurrentLogPath(){
@@ -152,6 +147,10 @@ function httpFetch(address, function_callback){
 				
 			case 500:
 				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
+				break;
+				
+			case 504:
+				log("["+address+"] ==> Server error ?! 504 - doing nothing.", "WW");
 				break;
 		}
 		

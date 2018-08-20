@@ -14,6 +14,7 @@ const fetch = require("node-fetch");
 const ircUplink = require('./irc_uplink.js');
 const linker = require('./faf_account_linking.js');
 const rss = require('./rss_feed.js');
+const bans = require('./bans.js');
 const utils = require('./utility.js');
 
 const db = new sqlite3.Database(process.cwd()+'/_private/userdata.db');
@@ -339,6 +340,39 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 sendRecords(message.channel, settings);
                 callback(COMMAND_SUCCESS);
                 break;
+                
+            case "warn":
+            case "kick":
+            case "ban":
+            case "unban":
+            case "pardon":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}                
+				arguments = escapeArguments(arguments);
+                takeActionFromMessage(message, command, arguments)
+                .then(callback(COMMAND_SUCCESS));
+                
+                break;
+                
+            case "userinfo":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}                
+				arguments = escapeArguments(arguments);
+                let id = utils.getIdFromString(arguments);
+                if (utils.isNumeric(arguments)){
+                    id = arguments;
+                }
+                bans.getUserInfo(message.guild, id, function(content){
+                    logForModerators(message.guild, content);
+                }).then(
+                    callback(COMMAND_SUCCESS)
+                );
+                
+                break;
 		}
 	}
 }
@@ -346,6 +380,103 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+/// Will generate a bans.takeAction() from the action command message
+async function takeActionFromMessage(message, action, arguments){
+    let ACTION;
+    switch (action){
+        case "warn":
+            ACTION = bans.ACTIONS.WARN;
+            break;
+        case "kick":
+            ACTION = bans.ACTIONS.KICK;
+            break;
+        case "ban":
+            ACTION = bans.ACTIONS.BAN;
+            break;
+        case "unban":
+        case "pardon":
+            ACTION = bans.ACTIONS.UNBAN;
+            break;
+    }
+    
+    let i = arguments.indexOf(" ");
+    let data = [arguments.slice(0,i), arguments.slice(i+1)];
+    
+    let targetId;
+    let str = '';
+    
+    if (i < 0){
+        targetId = utils.getIdFromString(arguments);
+    }
+    else{
+        targetId = utils.getIdFromString(data[0]);
+        str = data[1];
+    }
+    
+    const author = message.member;
+    let target = targetId;
+    try{
+        // No need to check if the user is here if we're about to unban him
+        if (ACTION != bans.ACTIONS.UNBAN){
+            target = await message.channel.guild.members.get(targetId);
+        }
+    }
+    catch(e){
+        if (e){
+            utils.log("Discarding moderator action from "+author.user.username+" because of an user fetching error", "WW", message.guild);
+            return;
+        }
+    }
+    finally{
+        
+        if (!target){
+            utils.log("Discarding moderator action from "+author.user.username+" because of invalid target", "WW", message.guild);
+            return;
+        }
+        
+        /// Ban duration indicator
+        let revokeAt = null;
+        if (ACTION === bans.ACTIONS.BAN){
+            i = str.indexOf(">");
+            data = [str.slice(0,i), str.slice(i+1)];
+            
+            if (i > -1){
+                str = data[0];
+                revokeAt = Date.now() + data[1] * 3600 * 1000; // Hours into miliseconds
+                revokeAt /= 1000; // Miliseconds into seconds
+            }
+        }
+        
+        bans.takeAction(ACTION, message.guild, target, author, str, revokeAt);
+        
+        return true;
+    }
+}
+
+/// Initialize ban events
+function initializeBans(settings, client){
+    bans.initialize(client.guilds);
+        
+    bans.status.on(bans.ACTIONS.WARN, function (targetGuildMember, authorGuildMember, str){
+        logForModerators(authorGuildMember.guild, "🚨 "+targetGuildMember.user.username+" has been **WARNED** by `"+authorGuildMember.user.username+"`. Reason : "+str);    
+    });
+    bans.status.on(bans.ACTIONS.KICK, function (targetGuildMember, authorGuildMember, str){
+        logForModerators(authorGuildMember.guild, "🥊 "+targetGuildMember.user.username+" has been **KICKED** by `"+authorGuildMember.user.username+"`. Reason : "+str);    
+    });
+    bans.status.on(bans.ACTIONS.BAN, function (targetGuildMember, authorGuildMember, str, revokeAt){
+        logForModerators(authorGuildMember.guild, "🚫 "+targetGuildMember.user.username+" has been **BANNED** by `"+authorGuildMember.user.username+"`. Reason : "+str);    
+        if (revokeAt){
+            logForModerators(authorGuildMember.guild, "This action will be revoked at `"+new Date(revokeAt*1000).toLocaleString()+"`");    
+        }
+    });
+    bans.status.on(bans.ACTIONS.UNBAN, function (targetGuildMember, authorGuildMember, str){
+        logForModerators(authorGuildMember.guild, "🛐 <@"+targetGuildMember.id+"> has been **PARDONNED** by `"+authorGuildMember.user.username+"`. Reason : "+str);    
+    });
+    setInterval(function(){
+        bans.updateBans(client.guilds);
+    }, settings["ban-update-rate"]*1000);
+}
 
 /// Sends records on this channel 
 function sendRecords(channel, settings){
@@ -355,7 +486,7 @@ function sendRecords(channel, settings){
         const cmd = settings["prefixes"][0]+k;
         const content = specs["recorded-messages"][k];
         
-        const line = cmd+" => "+content+"";
+        const line = cmd+" => "+content+"\n\n";
         
         if (message.length + line.length >= 2000){
             sendMessage(channel, message+"```");
@@ -1852,6 +1983,10 @@ module.exports = {
     initializeRss:
     function (settings){
         return initializeRss(settings);
+    },
+    initializeBans:
+    function (settings, client){
+        return initializeBans(settings, client);
     },
     stopIrc:
     function(settings, errName){
