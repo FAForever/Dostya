@@ -429,7 +429,6 @@ async function takeActionFromMessage(message, action, arguments){
         }
     }
     finally{
-        console.log(target);
         if (!target){
             utils.log("Discarding moderator action from "+author.user.username+" because of invalid target", "WW", message.guild);
             return;
