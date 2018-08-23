@@ -26,6 +26,14 @@ function initialize(settings){
         }
         catch(e){
             utils.log("RSS Fatal error on initialization", "><", fakeGuild);
+            fs.unlink(pubFilePath, function(err){
+                if (err){
+                    
+                }
+                else{
+                    utils.log("RSS publications file deleted", "!!", fakeGuild);
+                }
+            });
             console.log(e);
             return;
         }

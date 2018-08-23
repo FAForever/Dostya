@@ -315,7 +315,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					callback(COMMAND_MISUSE);
 					break;
 				}                
-				arguments = escapeArguments(arguments);
+				arguments = escapeArguments(arguments).replace("\\\\", "\\");
                 
                 const i = arguments.indexOf(" ");
                 const recording = [arguments.slice(0,i), arguments.slice(i+1)];
@@ -419,7 +419,7 @@ async function takeActionFromMessage(message, action, arguments){
     try{
         // No need to check if the user is here if we're about to unban him
         if (ACTION != bans.ACTIONS.UNBAN){
-            target = await message.channel.guild.members.get(targetId);
+            target = await message.guild.members.get(targetId);
         }
     }
     catch(e){
@@ -429,7 +429,7 @@ async function takeActionFromMessage(message, action, arguments){
         }
     }
     finally{
-        
+        console.log(target);
         if (!target){
             utils.log("Discarding moderator action from "+author.user.username+" because of invalid target", "WW", message.guild);
             return;

@@ -68,7 +68,9 @@ function getCurrentLogPath(){
 }
 
 function getIdFromString(str_reply_user){
-	
+	if (isNumeric(str_reply_user)){
+        return str_reply_user;
+    }
 	let thisUserId = str_reply_user.substring(2, str_reply_user.length-1);
 	if (thisUserId.charAt(0) == "!"){
 		thisUserId = thisUserId.substring(1, thisUserId.length);
