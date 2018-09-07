@@ -25,9 +25,10 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo"],
+		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo", "createrole", "deleterole", "roles"],
         "announcement-channels":[],
 		"moderator-log-channel":null,
-        "recorded-messages":{}
+        "recorded-messages":{},
+        "registeredRoles":[]
 	}
 }

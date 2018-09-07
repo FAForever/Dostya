@@ -51,7 +51,7 @@ client.on('guildCreate', guild =>{
     refreshAnnouncers(settings, client);
 });
 client.on('channelCreate', guild=>{
-    if (guild.name != undefined){
+    if (guild.name !== undefined){
         /// If guild.name is undefined, it is very likely this "channel" is a PM channel. No need to refresh the IRC receivers in that case.
         refreshReceivers(settings, client);
         refreshAnnouncers(settings, client);
@@ -73,13 +73,13 @@ client.on('guildMemberAdd', guildMember=>{
 client.on('message', message => {
 	
 	/// A few cases when the bot should be doing nothing : either empty guild or message is from myself
-	if (message.author.id == client.user.id ||
+	if (message.author.id === client.user.id ||
 		!message.guild){
 		return;
 	}
 	
 	/// IRC transmission - if needed
-    if (settings['allowed-bridges'][message.channel.name] != undefined){
+    if (settings['allowed-bridges'][message.channel.name] !== undefined){
         behavior.uplink(message.channel.name, message, settings);
         return;
     }
@@ -153,7 +153,7 @@ function refreshReceivers(settings, client){
             for (let i = 0; i < client.guilds.array().length; i++){
                 const guild = client.guilds.array()[i];
                 const channel = guild.channels.find("name", k);
-                if (channel != null && channel.type == "text"){
+                if (channel != null && channel.type === "text"){
                     behavior.addToReceivers(k, channel);
                     utils.log("Added ["+guild.name+"] #"+channel.name+" to receivers", ">>", guild);
                 }
