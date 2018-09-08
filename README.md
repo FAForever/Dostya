@@ -24,6 +24,8 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`sendtracker/tracker`| PMs the tracker file to the user |
 |`restrictions`| PMs the restricted commands list to the user |
 |`link <fafPlayerName>`| Links the discord user account to the FAF player account given |
+|`subscribe <roleName>`| Subscribe to a (discord) role that was registered via Dostya |
+|`unsubscribe <roleName>`| Unsubscribe from a (discord) role that was registered via Dostya |
 
 ### Moderator commands
 |       Usage         |Effect                         |
@@ -45,6 +47,8 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`kick <user/userID> *<message>`|Kicks the user with the corresponding <message> (if provided)|
 |`warn <user/userID> *<message>`|Warns the user with the corresponding <message> (if provided) or with an automatic warning message|
 |`userinfo <user/userID>`|Outputs in the moderator log channel the bans/kicks/warnings record of the given user.|
+|`createrole <roleName>`|Create a role with roleName that is registered with Dostya and allows subscribing
+|`deleterole <roleName>`|Delete a role that was created via Dostya. Will attempt to delte the discord role aswell.|
 
 ### Developer commands
 |       Usage         |Effect                         |
