@@ -41,7 +41,8 @@ const COMMAND_FORBIDDEN = 4;
 function executeCommand(command, arguments, cooldown, message, settings, utils, callback){
 
     // These commands won't be affected by cooldown
-	const cooldownWhitelist = [];
+	//TODO: these commands should be in the settings file
+	const cooldownWhitelist = ["subscribe", "unsubscribe"];
 	const developer = isDeveloper(message.author, settings);
 
 	if (!developer &&  settings["dev-only-mode"]){
@@ -381,7 +382,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 }
                 let roleName = escapeArguments(arguments);
 
-                if(isRoleAlreadyExisting(roleName, message.guild)) {
+                if(roleExists(roleName, message.guild)) {
                     replyToMessage(message, "Role already registered.")
                         .then(callback(COMMAND_MISUSE));
                     break;
@@ -392,14 +393,14 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 
                 break;
 
-            case "deleterole":guild
+            case "deleterole":
                 if (arguments == null){
                     callback(COMMAND_MISUSE);
                     break;
                 }
                 let delRoleName = escapeArguments(arguments);
 
-                if(! isRoleAlreadyExisting(delRoleName, message.guild)) {
+                if(! roleExists(delRoleName, message.guild)) {
                     replyToMessage(message, "Role not registered. Are you sure the spelling is correct?")
                         .then(callback(COMMAND_MISUSE));
                     break;
@@ -417,7 +418,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 }
                 let subscribeRoleName = escapeArguments(arguments);
 
-                if(! isRoleAlreadyExisting(subscribeRoleName, message.guild)) {
+                if(! roleExists(subscribeRoleName, message.guild)) {
                     replyToMessage(message, "Unknown role. Are you sure the spelling is correct?")
                         .then(callback(COMMAND_MISUSE));
                     break;
@@ -435,7 +436,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 }
                 let unsubscribeRoleName = escapeArguments(arguments);
 
-                if(! isRoleAlreadyExisting(unsubscribeRoleName, message.guild)) {
+                if(! roleExists(unsubscribeRoleName, message.guild)) {
                     replyToMessage(message, "Unknown role. Are you sure the spelling is correct?")
                         .then(callback(COMMAND_MISUSE));
                     break;
@@ -469,7 +470,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
  * @param {Guild} guild The guild to investigate
  * @returns {boolean} Wether this role is already present in the guild specifics
  */
-function isRoleAlreadyExisting(roleName, guild) {
+function roleExists(roleName, guild) {
     let specifics = utils.getSpecifics(guild);
     return specifics["registeredRoles"].some(role => role === roleName)
 }
@@ -481,26 +482,23 @@ function isRoleAlreadyExisting(roleName, guild) {
  * @param {Message} message The message from which to parse guild and author
  * @returns {Promise<any>} A promise that completes successfully when the role creation succeeded and completes exceptionally when the creation failed due to the discord server
  */
-function createRole(roleName, message) {
-    return new Promise((resolve, reject) => {
-        let specifics = utils.getSpecifics(message.guild);
-        specifics["registeredRoles"].push(roleName);
-        utils.writeSpecifics(message.guild, specifics);
+async function createRole(roleName, message) {
+	let specifics = utils.getSpecifics(message.guild);
+    specifics["registeredRoles"].push(roleName);
+    utils.writeSpecifics(message.guild, specifics);
+    try {
+		await message.guild.createRole({name: roleName, color: "LIGHT_GREY", mentionable: true, hoist: false}, "Created by Dostya as requested by" + message.author.username);
+        utils.log("Created role ${roleName} as requested by discord user ${message.author.id}", "--", message.guild);
+	} catch(e) {
+        let specificsCreateRoleFailed = utils.getSpecifics(message.guild);
+        specificsCreateRoleFailed.registeredRoles = specificsCreateRoleFailed.registeredRoles.filter(role => role !== roleName);
+        utils.writeSpecifics(message.guild, specificsCreateRoleFailed);
+        utils.log("Error while creating role. Reason: " + e, "WW", message.guild);
+        await replyToMessage(message, "Could not create role due to internal discord error. Please contact an administrator. Reason: " + e);
+        throw "Error while creating role. Reason: " + e;
+	}
 
-        message.guild.createRole({name: arguments, color: "LIGHT_GREY", mentionable: true, hoist: false}, "Created by Dostya as requested by" + message.author.username)
-            .then(value => {
-                utils.log("Created role ${roleName} as requested by discord user ${message.author.id}", "--", message.guild);
-                replyToMessage(message, "Role created")
-                    .then(resolve());
-            }, rejectReason => {
-                let specificsCreateRoleFailed = utils.getSpecifics(message.guild);
-                specificsCreateRoleFailed.registeredRoles = specificsCreateRoleFailed.registeredRoles.filter(role => role !== roleName);
-                utils.writeSpecifics(message.guild, specificsCreateRoleFailed);
-                utils.log("Error while creating role. Reason: " + rejectReason, "--", message.guild);
-                replyToMessage(message, "Could not create role due to internal discord error. Please contact an administrator. Reason: " + rejectReason)
-                    .then(reject());
-            });
-    });
+    await replyToMessage(message, "Role created");
 }
 
 /**
@@ -510,25 +508,27 @@ function createRole(roleName, message) {
  * @param {Message} message The message from which to parse guild and author
  * @returns {Promise<any>} A promise that completes successfully when the role deletion succeeded and completes exceptionally when the deletion failed due to the discord server
  */
-function deleteRole(roleName, message) {
-    return new Promise((resolve, reject) => {
-        let specifics = utils.getSpecifics(message.guild);
-        specifics.registeredRoles = specifics.registeredRoles.filter(role => role !== roleName);
-        utils.writeSpecifics(message.guild, specifics);
+async function deleteRole(roleName, message) {
+	let specifics = utils.getSpecifics(message.guild);
+	specifics.registeredRoles = specifics.registeredRoles.filter(role => role !== roleName);
+	utils.writeSpecifics(message.guild, specifics);
 
-        let roleToDelete = Array.from(message.guild.roles.values()).find(role => role.name === roleName);
-        if(roleToDelete !== undefined) {
-            roleToDelete.delete()
-                .then(v => {
-                    utils.log("Role ${roleName} deleted.", "--", message.guild);
-                    replyToMessage(message, "Role deleted").then(resolve());
-                });
-        } else {
-            utils.log("Role ${roleName} unregistered. Could not delete the discord role. (not found)", "--", message.guild);
-            replyToMessage(message, "Role was unregistered from Dostya. I could not delete the discord role - Maybe permissions are missing? Please remove the discord role manually.")
-                .then(reject());
-        }
-    });
+	let roleToDelete = Array.from(message.guild.roles.values()).find(role => role.name === roleName);
+	if(roleToDelete !== undefined) {
+		try {
+            await roleToDelete.delete();
+		} catch(e) {
+			utils.log("Role ${roleName} unregistered. Could not delete the discord role. (failed due to discord error " + e);
+            await replyToMessage(message, "Role was unregistered from Dostya. I could not delete the discord role - Maybe permissions are missing? Please remove the discord role manually. (Error: " + e + ")");
+			throw "Role ${roleName} unregistered. Could not delete the discord role. (failed due to discord error " + e;
+		}
+		utils.log("Role ${roleName} deleted.", "--", message.guild);
+		await replyToMessage(message, "Role deleted");
+	} else {
+		utils.log("Role ${roleName} unregistered. Could not delete the discord role. (not found)", "WW", message.guild);
+		await replyToMessage(message, "Role was unregistered from Dostya. I could not delete the discord role - Maybe permissions are missing? Please remove the discord role manually.")
+		throw "Role ${roleName} unregistered. Could not delete the discord role. (not found)";
+	}
 }
 
 /**
@@ -545,10 +545,11 @@ async function subscribe(roleName, message) {
         let guildMember = await message.guild.fetchMember(message.author);
         await guildMember.addRole(roleToSubscribe);
         utils.log("Added member ${message.author.id} to role ${roleName}.", "--", message.guild);
-        await replyToMessage(message, "You successfully subscribed to role " + roleName);
+        await message.react("🇴");
+        await message.react("🇰");
         return;
     } else {
-        utils.log("Failed adding member ${message.author.id} to role ${roleName}. (role not found)", "--", message.guild);
+        utils.log("Failed adding member ${message.author.id} to role ${roleName}. (role not found)", "WW", message.guild);
         await replyToMessage(message, "Role not present on discord server. Please ask a moderator for help. (role is registered with this bot but wasn't found in guild/server roles)");
         throw "Role not present on discord server.";
     }
@@ -565,13 +566,14 @@ async function unsubscribe(roleName, message) {
     let roleToUnsubscribe = Array.from(message.guild.roles.values()).find(role => role.name === roleName);
 
     if(roleToUnsubscribe !== undefined) {
-        let guildMember = message.guild.fetchMember(message.author);
+        let guildMember = await message.guild.fetchMember(message.author);
         await guildMember.removeRole(roleToUnsubscribe);
         utils.log("Removed member ${message.author.id} from role ${roleName}.", "--", message.guild);
-        await replyToMessage(message, "You successfully unsubscribed from role " + roleName);
+        await message.react("🇴");
+        await message.react("🇰");
         return;
     } else {
-        utils.log("Failed removing member ${message.author.id} from role ${roleName}. (role not found)", "--", message.guild);
+        utils.log("Failed removing member ${message.author.id} from role ${roleName}. (role not found)", "WW", message.guild);
         await replyToMessage(message, "Role not present on discord server.");
         throw "Role not present on discord server";
     }
