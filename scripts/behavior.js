@@ -1576,7 +1576,7 @@ function fetchMap(mapNameOrId, apiUrl, callback){
     if (utils.isNumeric(mapNameOrId) && !isNaN(parseFloat(mapNameOrId))){
         filter = 'id=='+mapNameOrId+'';
     }
-    const fetchUrl = apiUrl+'map?filter='+filter+'&page[size]=1&include=versions';
+    const fetchUrl = apiUrl+'map?filter='+filter+'&page[size]=1&include=versions,author';
     
 	utils.httpsFetch(fetchUrl, function(d){
 		if (Number.isInteger(d)){
