@@ -488,14 +488,13 @@ async function createRole(roleName, message) {
     utils.writeSpecifics(message.guild, specifics);
     try {
 		await message.guild.createRole({name: roleName, color: "LIGHT_GREY", mentionable: true, hoist: false}, "Created by Dostya as requested by" + message.author.username);
-        utils.log("Created role ${roleName} as requested by discord user ${message.author.id}", "--", message.guild);
+        utils.log(`Created role ${roleName} as requested by discord user ${message.author.id}`, "--", message.guild);
 	} catch(e) {
         let specificsCreateRoleFailed = utils.getSpecifics(message.guild);
         specificsCreateRoleFailed.registeredRoles = specificsCreateRoleFailed.registeredRoles.filter(role => role !== roleName);
         utils.writeSpecifics(message.guild, specificsCreateRoleFailed);
         utils.log("Error while creating role. Reason: " + e, "WW", message.guild);
         await replyToMessage(message, "Could not create role due to internal discord error. Please contact an administrator. Reason: " + e);
-        throw "Error while creating role. Reason: " + e;
 	}
 
     await replyToMessage(message, "Role created");
@@ -518,16 +517,14 @@ async function deleteRole(roleName, message) {
 		try {
             await roleToDelete.delete();
 		} catch(e) {
-			utils.log("Role ${roleName} unregistered. Could not delete the discord role. (failed due to discord error " + e);
+			utils.log(`Role ${roleName} unregistered. Could not delete the discord role. (failed due to discord error ` + e + `)`);
             await replyToMessage(message, "Role was unregistered from Dostya. I could not delete the discord role - Maybe permissions are missing? Please remove the discord role manually. (Error: " + e + ")");
-			throw "Role ${roleName} unregistered. Could not delete the discord role. (failed due to discord error " + e;
 		}
-		utils.log("Role ${roleName} deleted.", "--", message.guild);
+		utils.log(`Role ${roleName} deleted.`, "--", message.guild);
 		await replyToMessage(message, "Role deleted");
 	} else {
-		utils.log("Role ${roleName} unregistered. Could not delete the discord role. (not found)", "WW", message.guild);
+		utils.log(`Role ${roleName} unregistered. Could not delete the discord role. (not found)`, "WW", message.guild);
 		await replyToMessage(message, "Role was unregistered from Dostya. I could not delete the discord role - Maybe permissions are missing? Please remove the discord role manually.")
-		throw "Role ${roleName} unregistered. Could not delete the discord role. (not found)";
 	}
 }
 
@@ -544,14 +541,12 @@ async function subscribe(roleName, message) {
     if(roleToSubscribe !== undefined) {
         let guildMember = await message.guild.fetchMember(message.author);
         await guildMember.addRole(roleToSubscribe);
-        utils.log("Added member ${message.author.id} to role ${roleName}.", "--", message.guild);
+        utils.log(`Added member ${message.author.id} to role ${roleName}.`, "--", message.guild);
         await message.react("🇴");
         await message.react("🇰");
-        return;
     } else {
-        utils.log("Failed adding member ${message.author.id} to role ${roleName}. (role not found)", "WW", message.guild);
+        utils.log(`Failed adding member ${message.author.id} to role ${roleName}. (role not found)`, "WW", message.guild);
         await replyToMessage(message, "Role not present on discord server. Please ask a moderator for help. (role is registered with this bot but wasn't found in guild/server roles)");
-        throw "Role not present on discord server.";
     }
 }
 
@@ -568,14 +563,12 @@ async function unsubscribe(roleName, message) {
     if(roleToUnsubscribe !== undefined) {
         let guildMember = await message.guild.fetchMember(message.author);
         await guildMember.removeRole(roleToUnsubscribe);
-        utils.log("Removed member ${message.author.id} from role ${roleName}.", "--", message.guild);
+        utils.log(`Removed member ${message.author.id} from role ${roleName}.`, "--", message.guild);
         await message.react("🇴");
         await message.react("🇰");
-        return;
     } else {
-        utils.log("Failed removing member ${message.author.id} from role ${roleName}. (role not found)", "WW", message.guild);
+        utils.log(`Failed removing member ${message.author.id} from role ${roleName}. (role not found)`, "WW", message.guild);
         await replyToMessage(message, "Role not present on discord server.");
-        throw "Role not present on discord server";
     }
 }
 
