@@ -1768,12 +1768,12 @@ function fetchLadderPool(apiUrl, callback){
 }
 function fetchMap(mapNameOrId, apiUrl, callback){
 
-    let filter = 'displayName=="'+mapNameOrId+'"';
-    if (utils.isNumeric(mapNameOrId) && !isNaN(parseFloat(mapNameOrId))){
-        filter = 'id=='+mapNameOrId+'';
-    }
-    const fetchUrl = apiUrl+'map?filter='+filter+'&page[size]=1&include=versions';
-
+  let filter = 'displayName=="'+mapNameOrId+'"';
+  if (utils.isNumeric(mapNameOrId) && !isNaN(parseFloat(mapNameOrId))){
+      filter = 'id=='+mapNameOrId+'';
+  }
+  const fetchUrl = apiUrl+'map?filter='+filter+'&page[size]=1&include=versions,author';
+  
 	utils.httpsFetch(fetchUrl, function(d){
 		if (Number.isInteger(d)){
 			callback("Server returned the error `"+d+"`.");
