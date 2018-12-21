@@ -241,7 +241,8 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 						.then(callback(COMMAND_SUCCESS));
 					break;
 				}
-				blacklistUser(message.author, arguments, message.guild)
+				const discordUserId = arguments;
+				blacklistUser(message.author, discordUserId, message.guild)
 					.then(callback(COMMAND_SUCCESS));
 				break;
 
@@ -250,7 +251,8 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					callback(COMMAND_MISUSE);
 					break;
 				}
-				unblacklistUser(message.author, arguments, message.guild)
+				const discordUserId = arguments;
+				unblacklistUser(message.author, discordUserId, message.guild)
 					.then(callback(COMMAND_SUCCESS));
 				break;
 
@@ -906,21 +908,23 @@ function sendBlacklist(author, guild){
 }
 
 /// Adds user to the blacklist
-function blacklistUser(author, user, guild){
+function blacklistUser(author, userId, guild){
 	let specs = utils.getSpecifics(guild);
-	if (!isBlacklistedUser(user, guild)){
-		specs.blacklist.push(user);
+	if (!isBlacklistedUser(userId, guild)){
+		specs.blacklist.push(userId);
+		console.log("Added "+userId+" to the blacklist");
 	}
 	utils.writeSpecifics(guild, specs);
 	return sendBlacklist(author, guild);
 }
 
 /// Removes user from the blacklist
-function unblacklistUser(author, user, guild){
+function unblacklistUser(author, userId, guild){
 	let specs = utils.getSpecifics(guild);
-	if (isBlacklistedUser(user, guild)){
-		const index = specs.blacklist.indexOf(user);
+	if (isBlacklistedUser(userId, guild)){
+		const index = specs.blacklist.indexOf(userId);
 		specs.blacklist.splice(index, 1);
+		console.log("Removed "+userId+" from the blacklist");
 	}
 	utils.writeSpecifics(guild, specs);
 	return sendBlacklist(author, guild);
@@ -1375,6 +1379,10 @@ function uplink(ircChannel, message, settings){
 
         if (isUplinkAllowed(settings, ircChannel, message.guild.id)){
             let ok = false;
+			if (isBlacklistedUser(message.author, message.guild)){
+				utils.log("Blacklisted user "+message.author.username+" tried to use the bridge - did nothing", "--");
+				message.react("❌");
+			}
             ifLinked(message.author.id, function(isLinked){
                 if (isLinked){
                     utils.log("[TIRC#"+ircChannel+"] [FROM: "+message.author.id+"@"+message.guild.id+"] "+formatIrcMessage(message.author.username, message.content), "++", message.guild);
