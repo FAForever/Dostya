@@ -241,8 +241,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 						.then(callback(COMMAND_SUCCESS));
 					break;
 				}
-				const discordUserId = arguments;
-				blacklistUser(message.author, discordUserId, message.guild)
+				blacklistUser(message.author, arguments, message.guild)
 					.then(callback(COMMAND_SUCCESS));
 				break;
 
@@ -251,8 +250,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 					callback(COMMAND_MISUSE);
 					break;
 				}
-				const discordUserId = arguments;
-				unblacklistUser(message.author, discordUserId, message.guild)
+				unblacklistUser(message.author, arguments, message.guild)
 					.then(callback(COMMAND_SUCCESS));
 				break;
 
