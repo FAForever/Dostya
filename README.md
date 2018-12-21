@@ -30,9 +30,9 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 ### Moderator commands
 |       Usage         |Effect                         |
 |----------------|-------------------------------|
-|`blacklist <@user>`| Prevents a user to fire any command on this guild|
+|`blacklist <userId>`| Prevents a user to fire any command on this guild|
 |`blacklist`| PMs the current blacklist of the bot|
-|`unblacklist <@user>`| Removes an user from the blacklist|
+|`unblacklist <userId>`| Removes an user from the blacklist|
 |`restrict <command>`|Prevents anyone from firing the command, except Mods          |
 |`unrestrict <command>`|Remove the command from the restrictions list|
 |`fixbridge`|Reinitializes the connection to all IRC bridges established|

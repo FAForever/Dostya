@@ -910,7 +910,7 @@ function blacklistUser(author, userId, guild){
 	let specs = utils.getSpecifics(guild);
 	if (!isBlacklistedUser(userId, guild)){
 		specs.blacklist.push(userId);
-		console.log("Added "+userId+" to the blacklist");
+		utils.log("Added "+userId+" to the blacklist");
 	}
 	utils.writeSpecifics(guild, specs);
 	return sendBlacklist(author, guild);
@@ -922,20 +922,20 @@ function unblacklistUser(author, userId, guild){
 	if (isBlacklistedUser(userId, guild)){
 		const index = specs.blacklist.indexOf(userId);
 		specs.blacklist.splice(index, 1);
-		console.log("Removed "+userId+" from the blacklist");
+		utils.log("Removed "+userId+" from the blacklist");
 	}
 	utils.writeSpecifics(guild, specs);
 	return sendBlacklist(author, guild);
 }
 
 /// Checks if the user is blacklisted on this guild
-function isBlacklistedUser(author, guild){
+function isBlacklistedUser(userId, guild){
 	const specs = utils.getSpecifics(guild);
 	for (let i = 0; i < specs.blacklist.length; i++){
 		const thisBlacklistId = specs.blacklist[i];
-		if (thisBlacklistId.search(author.id) > -1){
-			return true;
-		}
+        if (thisBlacklistId == userId){
+            return true;
+        }
 	}
 	return false;
 }
