@@ -49,6 +49,9 @@ The purpose of the bot is to provide easy access to basic FAForever services thr
 |`userinfo <user/userID>`|Outputs in the moderator log channel the bans/kicks/warnings record of the given user.|
 |`createrole <roleName>`|Create a role with roleName that is registered with Dostya and allows subscribing
 |`deleterole <roleName>`|Delete a role that was created via Dostya. Will attempt to delte the discord role aswell.|
+|`logmapshere`|Adds the channel to the map watching list - new map will automatically be shown in this channel whenever they're uploaded|
+|`unlogmapshere`|Removes the channel from the map watching list|
+|`flushmaps`|Resets the "already shown" maps list|
 
 ### Developer commands
 |       Usage         |Effect                         |

@@ -306,6 +306,30 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 callback(COMMAND_SUCCESS);
                 break;
 
+            case "logmapshere":
+                let newSpecs = utils.getSpecifics(message.guild);
+                newSpecs['map-watch-channels'].push(message.channel.id);
+                utils.writeSpecifics(message.guild, newSpecs);
+                utils.log('Registered #'+message.channel.name+' for map watching', '>>', message.guild);
+				sendMessage(message.channel, "Registered `"+message.channel.name+"` for map watching"); 
+                callback(COMMAND_SUCCESS);
+                break;
+                
+            case "unlogmapshere":
+                let unlogSpecs = utils.getSpecifics(message.guild);
+                unlogSpecs['map-watch-channels'] = unlogSpecs['map-watch-channels'].filter(chan => chan!=message.channel.id);
+                utils.writeSpecifics(message.guild, unlogSpecs);
+                utils.log('Removed #'+message.channel.name+' from map watching list', '--', message.guild);
+				sendMessage(message.channel, 'Removed `'+message.channel.name+'` from map watching list'); 
+                callback(COMMAND_SUCCESS);
+                break;
+                
+            case "flushmaps":
+                db.run("DELETE FROM watched_maps",function(){});
+                utils.log("Maps table flushed by "+message.author.username, "!!");
+                callback(COMMAND_SUCCESS);
+                break;
+
             case "testlog":
                 logForModerators(message.guild, "This is the moderator logging channel");
                 callback(COMMAND_SUCCESS);
@@ -671,6 +695,21 @@ function initializeBans(settings, client){
     setInterval(function(){
         bans.updateBans(client.guilds);
     }, settings["ban-update-rate"]*1000);
+}
+
+// Initialiaz map watching
+function initializeMapWatching(settings, client){
+	setInterval(function(){
+		fetchMapVersions(settings["map-check-page-size"], db, settings["urls"]["data"], function(message){
+            client.guilds.forEach(function(guildName, guildId) {
+                const channels = utils.getSpecifics({"id":guildId})["map-watch-channels"];
+                for (let i = 0; i < channels.length; i++){
+                    const channel = client.channels.get(channels[i]);
+                    sendMessage(channel, message);
+                }
+            })
+        });
+	}, settings["map-check-interval"]*1000);
 }
 
 /// Sends records on this channel 
@@ -1880,6 +1919,118 @@ function fetchMap(mapNameOrId, apiUrl, callback){
 
 	});
 }
+async function fetchMapVersions(pageSize, db, apiUrl, callback){
+
+    const fetchUrl = apiUrl+'mapVersion?page[size]='+pageSize+'&include=map&sort=-createTime';
+    utils.log("Fetching new map versions", "++");
+    utils.httpsFetch(fetchUrl, async function(d){
+		if (Number.isInteger(d)){
+			utils.log("Server returned the error `"+d+"`.", "XX");
+			return;
+		}
+        
+        try{
+            const data = JSON.parse(d);
+            if (data != undefined && data.included != undefined){
+                
+                for (let i = 0; i < data.data.length; i++){
+                    const mapVersionData = data.data[i];
+                    const includes = data.included;
+
+                    let mapVersion = {};
+                    mapVersion.id = mapVersionData.id;
+                    const exists = await utils.dbFetchAsync(db, "SELECT id FROM watched_maps WHERE map_version_id="+mapVersion.id+";");
+                    if (exists){
+                        utils.log("Skipped map "+mapVersionData.id+" - already in the database", "++");
+                        continue;
+                    }
+                    mapVersion.author = "Unknown";
+                    mapVersion.imgUrl = mapVersionData.attributes.thumbnailUrlLarge.replace(/( )/g, "%20");
+                    mapVersion.version = mapVersionData.attributes.version;
+                    mapVersion.size = ((mapVersionData.attributes.width/512)*10)+"x"+((mapVersionData.attributes.height/512)*10)+" km";
+                    mapVersion.description = mapVersionData.attributes.description.replace(/<\/?[^>]+(>|$)/g, "");;
+                    mapVersion.downloadUrl = mapVersionData.attributes.downloadUrl;
+                    mapVersion.maxPlayers = mapVersionData.attributes.maxPlayers;
+                    mapVersion.ranked = mapVersionData.attributes.ranked;
+                    mapVersion.mapId = mapVersionData.relationships.map.data.id;
+                    mapVersion.createTime = mapVersionData.attributes.createTime;
+
+                    for (let j = 0; j < includes.length; j++){
+                        let thisData = includes[j];
+                        switch (thisData.type){
+                            default:
+                                continue;
+                                break;
+
+                            case "map":
+                                if (mapVersion.mapId == thisData.id){
+                                    mapVersion.displayName = thisData.attributes.displayName;
+                                }
+                                break;
+                        }
+                    }
+
+                    let embedMes = {
+                          "embed": {
+                            "title": mapVersion.displayName+" (Version "+mapVersion.version+")",
+                            "description": mapVersion.description,
+                            "color": 0xFF0000,
+                            "author":{
+                                "name":""+mapVersion.displayName+" (id #"+mapVersion.id+")",
+                                "url": mapVersion.downloadUrl
+                            },
+                            "image": {
+                              "url": mapVersion.imgUrl
+                            },
+                            "fields": [
+                                {
+                                    "name": "Size",
+                                    "value": mapVersion.size,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Max players",
+                                    "value": mapVersion.maxPlayers,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Ranked",
+                                    "value": mapVersion.ranked,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Created at",
+                                    "value": mapVersion.createTime,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Original map author",
+                                    "value": mapVersion.author,
+                                    "inline": true
+                                }
+                            ]
+                          }
+                        }
+
+                    if (mapVersion.downloadUrl != undefined){
+                        embedMes.embed.url = mapVersion.downloadUrl.replace(/ /g, "%20");
+                        embedMes.embed.author.url = mapVersion.downloadUrl.replace(/ /g, "%20");
+                    }
+                    utils.dbRunAsync(db, "INSERT INTO watched_maps (map_version_id) VALUES ("+mapVersion.id+");");
+                    callback(embedMes);
+                }
+            }
+        }
+        catch(e){
+            utils.log("Error when trying to JSON parse server's response", "XX");
+            console.log(e);
+        }
+	});
+}
+
+
+
+
 function escapeArguments(str){
 	str = str.replace(/\\/g, "\\\\")
    .replace(/\$/g, "\\$")
@@ -2050,9 +2201,17 @@ function refreshCooldown(id, cooldownObject){
 
 // Initializes the database
 function initializeDatabase(settings){
-    fs.readFile(process.cwd()+"/configuration/database_setup.sql", 'utf8', function(err, data){
-        db.run(data);
-    });
+	const migrationPath = process.cwd()+"/configuration/general_database_setup/";
+	const files = fs.readdirSync(migrationPath);
+	for (k in files){
+		const file = files[k];
+		if (file.substr(file.length - 4) != ".sql"){
+			continue;
+		}
+		utils.log("Running DB initialization script ["+file+"]", '--');
+		let data = fs.readFileSync(migrationPath+file, 'utf8');
+		utils.dbRunAsync(db, data);
+	}
 }
 
 function linkUser(discordId, fafId){
@@ -2188,6 +2347,10 @@ module.exports = {
     initializeBans:
     function (settings, client){
         return initializeBans(settings, client);
+    },
+    initializeMapWatching:
+    function (settings, client){
+        return initializeMapWatching(settings, client);
     },
     stopIrc:
     function(settings, errName){

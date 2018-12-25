@@ -30,6 +30,7 @@ client.on('ready', () => {
     refreshAnnouncers(settings, client);
 	behavior.initializeIrc(settings);
     behavior.initializeDatabase(settings);
+    behavior.initializeMapWatching(settings, client);
     behavior.initializeRss(settings);
     behavior.initializeBans(settings, client);
 });
