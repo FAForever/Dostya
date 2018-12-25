@@ -423,6 +423,56 @@ function stripTags(str){
     return str.replace(/<[^>]*>/g, '');
 }
 
+
+function dbRunAsync(db, query) {
+  return new Promise(function (resolve, reject) {
+    db.run(query, function (error) {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
+function dbFetchAsync(db, query) {
+  return new Promise(function (resolve, reject) {
+  	db.get(query, function (err, row){
+      if (err) {
+        reject(error);
+      } else {
+        resolve(row);
+      }
+	});
+  });
+}
+
+function fileExists(path) {
+  return new Promise(function (resolve, reject) {
+    fs.access(path, fs.constants.F_OK | fs.constants.W_OK, function (error) {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
+function readFileAsync(path) {
+  return new Promise(function (resolve, reject) {
+    fs.readFile(path, 'utf8', function (error, result) {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+
 //EXPORTS FOR SHARED USE
 module.exports = {
    log: 
@@ -430,6 +480,26 @@ module.exports = {
 		if (true || type !="DD"){
 			log(message, type, guild);
 		}
+	},
+	
+	fileExists:
+	function(path){
+		return fileExists(path);	
+	},
+	
+	readFileAsync:
+	function(path){
+		return readFileAsync(path);	
+	},
+	
+	dbRunAsync:
+	function(db, query){
+		return dbRunAsync(db, query);	
+	},
+	
+	dbFetchAsync:
+	function(db, query){
+		return dbFetchAsync(db, query);	
 	},
 	
 	getIdFromString:

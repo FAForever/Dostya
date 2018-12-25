@@ -10,6 +10,8 @@
 	"cooldown": 30,
 	"link-cooldown":30,
     "ban-update-rate":60,
+	"map-check-interval":300,
+	"map-check-page-size":10,
 	"player-search-limit": 5,
 	"aliases": {
 		"#": "!replay "
@@ -25,10 +27,11 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo", "createrole", "deleterole", "roles"],
+		"restricted": ["watchmapshere","unwatchmapshere","blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo", "createrole", "deleterole", "roles"],
         "announcement-channels":[],
 		"moderator-log-channel":null,
         "recorded-messages":{},
-        "registeredRoles":[]
+        "registeredRoles":[],
+		"map-watch-channels":[]
 	}
 }

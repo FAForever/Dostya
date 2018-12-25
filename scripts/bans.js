@@ -168,7 +168,7 @@ async function getGuildDatabase(guild){
     const path = process.cwd()+'/_private/identities/'+guild.id+'/moderator_actions.db';
     let db;
     try{
-        let test = await fileExists(path);
+        let test = await utils.fileExists(path);
         db = new sqlite3.Database(path);
     }
     catch(e){
@@ -181,8 +181,8 @@ async function getGuildDatabase(guild){
                 continue;
             }
             utils.log("Running initialization script ["+file+"]", 'DD', fakeGuild);
-            let data = await readFileAsync(migrationPath+file);
-            await dbRunAsync(db, data);
+            let data = await utils.readFileAsync(migrationPath+file);
+            await utils.dbRunAsync(db, data);
         }
         utils.log("Initialized the bans database for "+guild.name+" (first time)", '--', fakeGuild);
     }
@@ -191,41 +191,6 @@ async function getGuildDatabase(guild){
     }
 }
 
-function fileExists(path) {
-  return new Promise(function (resolve, reject) {
-    fs.access(path, fs.constants.F_OK | fs.constants.W_OK, function (error) {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(true);
-      }
-    });
-  });
-}
-
-function readFileAsync(path) {
-  return new Promise(function (resolve, reject) {
-    fs.readFile(path, 'utf8', function (error, result) {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(result);
-      }
-    });
-  });
-}
-
-function dbRunAsync(db, query) {
-  return new Promise(function (resolve, reject) {
-    db.run(query, function (error) {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(true);
-      }
-    });
-  });
-}
 
 module.exports = {
     takeAction:
