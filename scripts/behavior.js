@@ -1921,7 +1921,7 @@ function fetchMap(mapNameOrId, apiUrl, callback){
 }
 async function fetchMapVersions(pageSize, db, apiUrl, callback){
 
-    const fetchUrl = apiUrl+'mapVersion?page[size]='+pageSize+'&include=map&sort=-createTime';
+    const fetchUrl = apiUrl+'mapVersion?page[size]='+pageSize+'&include=map,map.author&sort=-createTime';
     utils.log("Fetching new map versions", "++");
     utils.httpsFetch(fetchUrl, async function(d){
 		if (Number.isInteger(d)){
@@ -1954,6 +1954,7 @@ async function fetchMapVersions(pageSize, db, apiUrl, callback){
                     mapVersion.ranked = mapVersionData.attributes.ranked;
                     mapVersion.mapId = mapVersionData.relationships.map.data.id;
                     mapVersion.createTime = mapVersionData.attributes.createTime;
+                    mapVersion.authorId = 0;
 
                     for (let j = 0; j < includes.length; j++){
                         let thisData = includes[j];
@@ -1965,6 +1966,13 @@ async function fetchMapVersions(pageSize, db, apiUrl, callback){
                             case "map":
                                 if (mapVersion.mapId == thisData.id){
                                     mapVersion.displayName = thisData.attributes.displayName;
+									mapVersion.authorId = thisData.relationships.author.data.id;
+                                }
+                                break;
+
+                            case "player":
+                                if (mapVersion.authorId == thisData.id){
+                                    mapVersion.author = thisData.attributes.login;
                                 }
                                 break;
                         }
