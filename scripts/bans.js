@@ -76,7 +76,7 @@ async function takeAction(ACTION, guild, target, author, str="", revokeAt){
 
 async function updateBans(guilds){
     const guildList = guilds.array();
-    utils.log("Updating the bans of "+guildList.length+" guilds", "DD", fakeGuild);
+    utils.log("Updating the bans of "+guildList.length+" guilds", "++", fakeGuild);
     for (let k in guildList){
         const guild = guildList[k];
         const db = await getGuildDatabase(guild);
@@ -89,10 +89,10 @@ async function updateBans(guilds){
             const revokeAt = row['unban_at'];
             const targetId = row['target_id'];
             if (revokeAt == null || revokeAt == undefined){
-                utils.log(guild.name+": No revocation time given for ban #"+row['id'], 'DD', fakeGuild);
+                utils.log(guild.name+": No revocation time given for ban #"+row['id'], '++', fakeGuild);
                 return;
             }
-            utils.log(guild.name+": Ban time left for #"+row['id']+": "+revokeAt+" - "+(Date.now()/1000)+" = "+(revokeAt - Date.now()/1000)+"s", 'DD', fakeGuild);
+            utils.log(guild.name+": Ban time left for #"+row['id']+": "+revokeAt+" - "+(Date.now()/1000)+" = "+(revokeAt - Date.now()/1000)+"s", '++', fakeGuild);
             if ((revokeAt - Date.now()/1000)< 0){ // Time to automatically unban the user
                 const bans = await guild.fetchBans();
                 if (bans.has(targetId)){
