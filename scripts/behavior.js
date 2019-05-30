@@ -710,7 +710,7 @@ function initializeMapWatching(settings, client){
                 const channels = utils.getSpecifics({"id":guildId})["map-watch-channels"];
                 for (let i = 0; i < channels.length; i++){
                     const channel = client.channels.get(channels[i]);
-                    sendMessage(channel, message);
+                    if (channel != undefined) sendMessage(channel, message);
                 }
             })
         });
