@@ -644,12 +644,14 @@ async function takeActionFromMessage(message, action, arguments){
     }
     catch(e){
         if (e){
+            logForModerators(author.guild, "The action could not be completed because of an user fetching error. Is the targeted still user on this server ?");
             utils.log("Discarding moderator action from "+author.user.username+" because of an user fetching error", "WW", message.guild);
             return;
         }
     }
     finally{
         if (!target){
+            logForModerators(author.guild, "The action could not be completed because the target is invalid.\nIs the target still on this server ? Did you type their ID correctly ?");
             utils.log("Discarding moderator action from "+author.user.username+" because of invalid target", "WW", message.guild);
             return;
         }
@@ -691,6 +693,9 @@ function initializeBans(settings, client){
     });
     bans.status.on(bans.ACTIONS.UNBAN, function (targetGuildMember, authorGuildMember, str){
         logForModerators(authorGuildMember.guild, "🛐 <@"+targetGuildMember.id+"> has been **PARDONNED** by `"+authorGuildMember.user.username+"`. Reason : "+str);
+    });
+    bans.status.on(bans.ACTIONS.NOTIFY, function (authorGuildMember, str){
+        logForModerators(authorGuildMember.guild, "There was an issue with your moderator action - "+str);
     });
     setInterval(function(){
         bans.updateBans(client.guilds);
@@ -2216,7 +2221,7 @@ function initializeDatabase(settings){
 		if (file.substr(file.length - 4) != ".sql"){
 			continue;
 		}
-		utils.log("Running DB initialization script ["+file+"]", '--');
+		utils.log("Running DB initialization script ["+file+"]", 'DD');
 		let data = fs.readFileSync(migrationPath+file, 'utf8');
 		utils.dbRunAsync(db, data);
 	}

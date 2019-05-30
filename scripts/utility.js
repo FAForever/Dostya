@@ -428,9 +428,10 @@ function dbRunAsync(db, query) {
   return new Promise(function (resolve, reject) {
     db.run(query, function (error) {
       if (error) {
+        log(error, "DD");
         reject(error);
       } else {
-        resolve(true);
+        resolve(this.lastID);
       }
     });
   });
@@ -438,8 +439,10 @@ function dbRunAsync(db, query) {
 
 function dbFetchAsync(db, query) {
   return new Promise(function (resolve, reject) {
-  	db.get(query, function (err, row){
-      if (err) {
+  	db.get(query, function (error, row){
+      if (error) {
+        log(error, "><");
+        console.log(error);
         reject(error);
       } else {
         resolve(row);
@@ -453,6 +456,7 @@ function fileExists(path) {
     fs.access(path, fs.constants.F_OK | fs.constants.W_OK, function (error) {
       if (error) {
         reject(error);
+        console.log(error);
       } else {
         resolve(true);
       }

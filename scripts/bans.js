@@ -8,21 +8,28 @@ const sqlite3 = require('sqlite3').verbose();
 const utils = require('./utility.js');
 
 const ACTIONS = {
+    NOTIFY : -1,
     WARN : 0,
     KICK : 1,
     BAN : 2,
     UNBAN: 3,
 }
 
-function initialize(guilds){
+let isInitialized = false;
+
+async function initialize(guilds){
+    utils.log("Starting guilds databases initialization...", "--", fakeGuild);
     const guildList = guilds.array();
     for (let k in guildList){
         const guild = guildList[k];
-        const db = getGuildDatabase(guild);
+        const db = await initializeGuildDatabase(guild);
     }
+    utils.log("Guilds database initialization finished", "--", fakeGuild);
+    isInitialized = true;
 }
 
 async function takeAction(ACTION, guild, target, author, str="", revokeAt){
+    if (!isInitialized) return false;
     const db = await getGuildDatabase(guild);
     let notification;
     if (str.length > 0){
@@ -48,33 +55,47 @@ async function takeAction(ACTION, guild, target, author, str="", revokeAt){
     
     switch (ACTION){
         case ACTIONS.WARN:
+            await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);
             break;
             
         case ACTIONS.KICK:
+            await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);
             target.kick(notification);
             break;
             
         case ACTIONS.BAN:
             target.ban(notification);
-            db.run("INSERT INTO bans (target_id, issuer_id, reason, unban_at) VALUES ('"+target.id+"', '"+author.id+"', '"+sqlStr+"', "+revokeAt+")");
+            const modActionId = await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);
+            db.run("INSERT INTO bans (moderator_action_id, target_id, unban_at) VALUES ('"+modActionId+"', '"+target.id+"', "+revokeAt+")");
             break;
             
         case ACTIONS.UNBAN:
             const bans = await guild.fetchBans();
+            if (utils.isNumeric(target.id)){
+                db.run("DELETE FROM bans WHERE target_id="+target.id+"");
+            }
             if (bans.has(target.id)){
+                await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);
                 guild.unban(target.id, str);
             }
             else{
+                const errMsg = "User #"+target.id+" cannot be unbanned, because they are not banned.";
+                utils.log(errMsg, "WW", fakeGuild);
+                status.emit(ACTIONS.NOTIFY, author, errMsg);
                 return; // Invalid use
             }
             break;
     }
     
     status.emit(ACTION, target, author, str, revokeAt);
-    db.run("INSERT INTO moderator_actions (target_id, issuer_id, reason, action) VALUES ('"+target.id+"', '"+author.id+"', '"+sqlStr+"', "+ACTION+")");
+}
+
+async function logModeratorAction(db, targetId, issuerId, reason, action){
+    return await utils.dbRunAsync(db, "INSERT INTO moderator_actions (target_id, issuer_id, reason, action) VALUES ('"+targetId+"','"+issuerId+"','"+reason+"','"+action+"')");
 }
 
 async function updateBans(guilds){
+    if (!isInitialized) return false;
     const guildList = guilds.array();
     utils.log("Updating the bans of "+guildList.length+" guilds", "++", fakeGuild);
     for (let k in guildList){
@@ -92,7 +113,7 @@ async function updateBans(guilds){
                 utils.log(guild.name+": No revocation time given for ban #"+row['id'], '++', fakeGuild);
                 return;
             }
-            utils.log(guild.name+": Ban time left for #"+row['id']+": "+revokeAt+" - "+(Date.now()/1000)+" = "+(revokeAt - Date.now()/1000)+"s", '++', fakeGuild);
+            utils.log(guild.name+": Ban time left for #"+targetId+": "+Math.round((revokeAt - Date.now()/1000))+"s", '++', fakeGuild);
             if ((revokeAt - Date.now()/1000)< 0){ // Time to automatically unban the user
                 const bans = await guild.fetchBans();
                 if (bans.has(targetId)){
@@ -105,6 +126,8 @@ async function updateBans(guilds){
 }
 
 async function getUserInfo(guild, discordId, callback){
+    if (!isInitialized) return false;
+    
     const db = await getGuildDatabase(guild);
     let message = "User info for <@"+discordId+"> "+discordId+": \n\n";
     fetchUser(discordId, db, async function(rows){
@@ -115,9 +138,12 @@ async function getUserInfo(guild, discordId, callback){
             if (issuer){
                 issuerName = issuer.user.username;
             }
-            let line = "**"+translateAction(row['action'])+"** by `"+issuerName+"` at "+Date(row['create_time']*1000).toLocaleString()+". Reason : "+row["reason"]+".";
+            let line = "**"+translateAction(row['action'])+"** by `"+issuerName+"` at "+row['create_time']+". Reason : "+row["reason"]+".";
             if (row['action'] == ACTIONS.BAN){
-                line += "\nWill be revoked at : "+Date(row['unban_at']*1000).toLocaleString();
+                const banRecord = await utils.dbFetchAsync(db, "SELECT unban_at FROM bans WHERE moderator_action_id='"+row["id"]+"'").catch(function(e){console.log(e);});
+                if (banRecord != undefined){
+                    line += "\nWill be revoked at : "+banRecord['unban_at'];
+                }
             }
             line += "\n\n";
             
@@ -164,31 +190,31 @@ function translateAction(ACTION){
     
 }
 
+async function initializeGuildDatabase(guild){
+    const migrationPath = process.cwd()+"/configuration/guild_database_setup/";
+    const files = fs.readdirSync(migrationPath);
+    let db = await getGuildDatabase(guild);
+    for (k in files){
+        const file = files[k];
+        if (file.substr(file.length - 4) != ".sql"){
+            continue;
+        }
+        utils.log("Running DB script ["+file+"]", 'DD', guild);
+        let data = await utils.readFileAsync(migrationPath+file);
+        let queries = data.split(";");
+        for(line in queries){
+            const query = queries[line];
+            if (query.replace(/(\r\n|\n|\r)/gm,"").length <= 0){ continue; }
+            await utils.dbRunAsync(db, query).catch(function(e){});
+        }
+    }
+    utils.log("Initialized the guild database for "+guild.name+"", 'DD', fakeGuild);
+}
+
 async function getGuildDatabase(guild){
     const path = process.cwd()+'/_private/identities/'+guild.id+'/moderator_actions.db';
     let db;
-    try{
-        let test = await utils.fileExists(path);
-        db = new sqlite3.Database(path);
-    }
-    catch(e){
-        const migrationPath = process.cwd()+"/configuration/guild_database_setup/";
-        const files = fs.readdirSync(migrationPath);
-        db = new sqlite3.Database(path);
-        for (k in files){
-            const file = files[k];
-            if (file.substr(file.length - 4) != ".sql"){
-                continue;
-            }
-            utils.log("Running initialization script ["+file+"]", 'DD', fakeGuild);
-            let data = await utils.readFileAsync(migrationPath+file);
-            await utils.dbRunAsync(db, data);
-        }
-        utils.log("Initialized the bans database for "+guild.name+" (first time)", '--', fakeGuild);
-    }
-    finally{
-        return db;
-    }
+    return new sqlite3.Database(path);
 }
 
 
@@ -208,7 +234,7 @@ module.exports = {
         return updateBans(guilds);
     },
     initialize:
-    function(guilds){
-        return initialize(guilds);
+    async function(guilds){
+        return await initialize(guilds);
     }
 }
