@@ -1110,7 +1110,7 @@ function fetchPlayerList(searchTerm, limit, apiUrl, callback){
 /// Fetches player info and formats it as an embed message
 function fetchPlayer(playerName, apiUrl, callback){
 
-   utils.httpsFetch(apiUrl+'player?filter=login=="'+playerName+'"&include=clanMemberships.clan,globalRating,ladder1v1Rating,names,avatarAssignments.avatar', function(d){
+   utils.httpsFetch(apiUrl+'player?filter=login=="'+playerName+'"&include=clanMembership.clan,globalRating,ladder1v1Rating,names,avatarAssignments.avatar', function(d){
 
 		const data = JSON.parse(d);
 		if (data.data != undefined && data.data.length > 0){
