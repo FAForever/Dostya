@@ -16,6 +16,10 @@
 	"aliases": {
 		"#": "!replay "
 	},
+	"report-reviewer-moderator-impersonation":{
+		"login":"Gardelouve",
+		"password":"viknipfechomtorb8ob5"
+	},
 	"urls": {
 		"unitDB": "http://direct.faforever.com/faf/unitsDB/",
 		"wiki": "https://wiki.faforever.com/",
@@ -27,7 +31,8 @@
 	"default-specifics": {
 		"mods": [],
 		"blacklist": [],
-		"restricted": ["flushmaps", "logmapshere","unlogmapshere","blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo", "createrole", "deleterole", "roles"],
+		"report-reviewers": [],
+		"restricted": ["addreviewer", "removereviewer", "reviewers", "reportid", "givereport", "flushmaps", "logmapshere","unlogmapshere","blacklist", "restrict", "unrestrict", "fixbridge", "links", "showlinks", "unlink", "loghere", "testlog", "record", "records", "showrecords", "ban", "kick", "warn", "unban", "userinfo", "createrole", "deleterole", "roles"],
         "announcement-channels":[],
 		"moderator-log-channel":null,
         "recorded-messages":{},

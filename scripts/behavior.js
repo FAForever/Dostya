@@ -460,7 +460,7 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 }
                 let unsubscribeRoleName = escapeArguments(arguments);
 
-                if(! roleExists(unsubscribeRoleName, message.guild)) {
+                if(!roleExists(unsubscribeRoleName, message.guild)) {
                     sendMessage(message.channel, "Unknown role. Are you sure the spelling is correct?")
                         .then(callback(COMMAND_MISUSE));
                     break;
@@ -479,7 +479,66 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
                 sendMessage(message.channel, subscriptionsMessage)
                     .then(callback(COMMAND_SUCCESS));
 
-                break;
+				break;
+				
+			case "addreviewer":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				addReviewer(arguments, message.guild);
+				sendMessage(message.channel, 
+					"Reviewer "+arguments+" added to reviewers")
+				.then(
+					sendReviewers(message.channel).then(
+						callback(COMMAND_SUCCESS)
+					)
+				);
+				
+				break;
+
+			case "removereviewer":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				removeReviewer(arguments, message.guild);
+				sendMessage(message.channel, 
+					"Reviewer "+arguments+" removed, if it existed.")
+				.then(
+					sendReviewers(message.channel).then(
+						callback(COMMAND_SUCCESS)
+					)
+				);
+				
+				break;
+
+			case "showreviewers":
+			case "reviewers":
+				sendReviewers(message.channel)
+				.then(callback(COMMAND_SUCCESS));
+				break;
+
+			case "reportid":
+				if (arguments == null){
+					callback(COMMAND_MISUSE);
+					break;
+				}
+				arguments = escapeArguments(arguments);
+				
+				if (isReportsReviewer(message.author, message.guild)){
+					fetchReport(arguments, function(content){
+						sendMessage(message.channel, content)
+						.then(callback(COMMAND_SUCCESS))
+					});
+				}
+
+				break;
+
+			case "givereport":
+				break;
 		}
 	}
 }
@@ -487,6 +546,136 @@ function executeCommand(command, arguments, cooldown, message, settings, utils, 
 /// End of
 ///
 ///////////////
+
+async function fetchReport(id, callback){
+	const reportData = await utils.apiAuthorizedFetch("moderationReport?filter=id=="+id+"&include=reporter,lastModerator,reportedUsers&fields[moderationReport]=reportStatus,id,createTime,reportDescription,lastModerator,game,reportedUsers,reporter&fields[player]=id,login,createTime");
+	data = JSON.parse(reportData);
+	
+	callback(formatReportData(data));
+}
+
+function formatReportData(data){
+	let report = {
+		reporter:data.data[0].relationships.reporter.data == null ? null : data.data[0].relationships.reporter.data.id,
+		reported:data.data[0].relationships.reportedUsers.data,
+		id:data.data[0].id,
+		status:data.data[0].attributes.reportStatus,
+		description:data.data[0].attributes.reportDescription,
+		createTime:data.data[0].attributes.createTime,
+		game:data.data[0].relationships.game.data == null ? null : data.data[0].relationships.game.data.id,
+		moderator:data.data[0].relationships.lastModerator.data == null ? null : data.data[0].relationships.lastModerator.data.id
+	};
+	
+	// Reported users
+	let reported = [];
+	let jointReportedUsers = [];
+	for(uk in report.reported){
+		const user = report.reported[uk].id;
+		for(k in data.included){
+			const value = data.included[k];
+			if (value.type == "player" && value.id == user){
+				reported.push({
+					name:value.attributes.login+" (id "+value.id+")",
+					value:value.attributes.createTime,
+					inline:true
+				});
+				jointReportedUsers.push(reported[reported.length-1].name);
+			}
+		}
+	}
+	report.reported = reported;
+
+	// Reporter
+	for(k in data.included){
+		const value = data.included[k];
+		if (value.type == "player" && value.id == report.reporter){
+			report.reporter = {
+				login:value.attributes.login,
+				id:value.id,
+				createTime:value.attributes.createTime
+			};
+		}
+	}
+
+	// Last moderator if any
+	if (report.moderator != null){
+		for(k in data.included){
+			const value = data.included[k];
+			if (value.type == "player" && value.id == report.moderator){
+				report.moderator = {
+					login:value.attributes.login,
+					id:value.id,
+					createTime:value.attributes.createTime
+				};
+			}
+		}
+	}
+
+	let embedMes = {
+		"embed": {
+		  "author": {
+			  name:"Report from "+report.reporter.login+" (id #"+report.reporter.id+")"+" against "+jointReportedUsers.join(" and ")
+		  },
+		  "description": report.description,
+		  "color": 
+		  	  report.status=="AWAITING"?0xFFFF00: 
+			  report.status=="COMPLETED"?0x11FF11: 
+			  report.status=="PROCESSING"?0x0000FF: 
+			  report.status=="DISCARDED"?0x88888:
+			  	0x0000FF,
+		  "fields": report.reported
+		}
+	  };
+
+	  if (report.game != null){
+		  embedMes.embed.title = "Download replay";
+		  embedMes.embed.url = "http://content.faforever.com/faf/vault/replay_vault/replay.php?id="+report.game;
+	  }
+
+	  return embedMes;
+}
+
+function addReviewer(userId, guild){
+	let specifics = utils.getSpecifics(guild);
+	specifics["report-reviewers"].push(userId);
+	utils.writeSpecifics(guild, specifics);
+}
+
+function removeReviewer(userId, guild){
+	let specifics = utils.getSpecifics(guild);
+	let index = specifics["report-reviewers"].indexOf(userId);
+	while (index > -1){
+		specifics["report-reviewers"].splice(index, 1);
+		index = specifics["report-reviewers"].indexOf(userId);
+	}
+	utils.writeSpecifics(guild, specifics);
+}
+
+async function sendReviewers(channel){
+	let msg = '`DiscordID` => DiscordName';
+	const specs = utils.getSpecifics(channel.guild);
+	for (let k in specs["report-reviewers"]){
+		const id = specs["report-reviewers"][k];
+		let name;
+		const getMember = await channel.guild.members.get(id);
+		try{
+			userName = getMember.user.tag;
+		}
+		catch(e){
+			// User is probably banned or left from this discord
+			userName = '<unknown>';
+		}
+		finally{
+			const line = "\n`"+id+"` => "+userName+"";
+			if (msg.length + line.length >= 2000){
+				sendMessage(channel, msg);
+				msg = '';
+			}
+			msg += line;
+		}
+	}
+	sendMessage(channel, msg);
+}
 
 /**
  * Checks wether a role is already present
@@ -980,6 +1169,19 @@ function isBlacklistedUser(userId, guild){
         if (thisBlacklistId == userId){
             return true;
         }
+	}
+	return false;
+}
+
+/// Checks if the user is allowed to review reports
+function isReportsReviewer(member, guild){
+	const specs = utils.getSpecifics(guild);
+
+	for (let i = 0; i < specs["report-reviewers"].length; i++){
+		const thisReviewerId = specs["report-reviewers"][i];
+		if (member.id === thisReviewerId){
+			return true;
+		}
 	}
 	return false;
 }

@@ -127,34 +127,7 @@ function getIdentityPath(guild){
 function httpFetch(address, function_callback){
 	
 	http.get(address, (res) => {
-		//console.log('statusCode:', res.statusCode);
-		//console.log('headers:', res.headers);
-		let ok = false;
-		switch (res.statusCode){
-			default:
-				ok = true;
-				break;
-				
-			case 400:
-				log("["+address+"] ==> Malformed request ?! 400 - doing nothing.", "WW");
-				break;
-				
-			case 403:
-				log("["+address+"] ==> Access forbidden ?! 403 - doing nothing.", "WW");
-				break;
-				
-			case 404:
-				log("["+address+"] ==> Server not found ?! 404 - doing nothing.", "WW");
-				break;
-				
-			case 500:
-				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
-				break;
-				
-			case 504:
-				log("["+address+"] ==> Server error ?! 504 - doing nothing.", "WW");
-				break;
-		}
+		let ok = checkHttpCode(address, res.statusCode);
 		
 		if (ok){
 
@@ -179,39 +152,44 @@ function httpFetch(address, function_callback){
 		log("["+address+"] ==> HTTP request returned following error : ["+(e)+"]. Doing nothing.", "WW");
 	});
 }
+
+function checkHttpCode(address, code){
+
+	let ok = false;
+	switch (code){
+		default:
+			ok = true;
+			break;
+			
+		case 400:
+			log("["+address+"] ==> Malformed request ?! 400 - doing nothing.", "WW");
+			break;
+			
+		case 403:
+			log("["+address+"] ==> Access forbidden ?! 403 - doing nothing.", "WW");
+			break;
+			
+		case 404:
+			log("["+address+"] ==> Server not found ?! 404 - doing nothing.", "WW");
+			break;
+			
+		case 500:
+			log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
+			break;
+			
+		case 504:
+			log("["+address+"] ==> Server error ?! 504 - doing nothing.", "WW");
+			break;
+	}
+	return ok;
+}
+
 function httpsFetch(address, function_callback){
    
    //Single HTTPS-GET should get us everything we need
    
 	https.get(address, (res) => {
-		
-		let ok = false;
-		switch (res.statusCode){
-			default:
-				ok = true;
-				break;
-				
-			case 400:
-				log("["+address+"] ==> Malformed request ?! 400 - doing nothing.", "WW");
-				break;
-				
-			case 403:
-				log("["+address+"] ==> Access forbidden ?! 403 - doing nothing.", "WW");
-				break;
-				
-			case 404:
-				log("["+address+"] ==> Server not found ?! 404 - doing nothing.", "WW");
-				break;
-				
-			case 500:
-				log("["+address+"] ==> Server error ?! 500 - doing nothing.", "WW");
-				break;
-				
-			case 504:
-				log("["+address+"] ==> Server error ?! 504 - doing nothing.", "WW");
-				break;
-		}
-		
+		const ok = checkHttpCode(address, res.statusCode);
 		if (ok){
 
 			let d = '';
@@ -234,6 +212,73 @@ function httpsFetch(address, function_callback){
 	}).on('error', (e) => {
 		log("HTTPS request returned following error : ["+(e)+"]. Doing nothing.", "WW");
 	});
+}
+
+async function apiAuthorizedFetch(route){
+	
+	const credentialsPath = process.cwd()+'/_private/session.json';
+	try{ 
+		fs.accessSync(credentialsPath);
+	}
+	catch(e){
+		return null;
+	}
+	const passport = require('passport');
+	const OAuth2Strategy = require('passport-oauth2');
+	const fafCredentials = require(credentialsPath);
+
+	const credentials = {
+		client: {
+		  id: fafCredentials.clientId,
+		  secret: fafCredentials.clientSecret
+		},
+		auth: {
+		  tokenHost: settings.urls.api
+		}
+	  };
+	const humaneCredentials = settings["report-reviewer-moderator-impersonation"];
+	const oauth2 = require('simple-oauth2').create(credentials);
+	const tokenConfig = {
+		username: humaneCredentials['login'],
+		password: humaneCredentials['password'],
+		scope: 'public_profile moderation'
+	};
+	
+	let accessToken;
+	try {
+		const result = await oauth2.ownerPassword.getToken(tokenConfig);
+		accessToken = oauth2.accessToken.create(result).token;
+	} catch (error) {
+		log('Access Token error: '+ error.message, '><');
+		return null;
+	}
+
+	const addr = settings.urls.data + route;
+
+	var data = await new Promise(function (resolve, reject){
+		https.get(addr, {headers:{'Authorization': 'Bearer ' + accessToken.access_token}}, 
+		(res) => {
+			const ok = checkHttpCode(addr, res.statusCode);
+			if (ok){
+				let d = '';
+	
+				res.setEncoding('utf8');
+	
+				res.on('readable', function () {
+					const chunk = this.read() || '';
+	
+					d += chunk;
+				});
+	
+				res.on('end', function () { resolve(d); });
+			}
+			else{
+				reject(res.statusCode);
+			}
+		});
+	});
+
+	return data;	
 }
 
 //Utils i'll comment later
@@ -572,5 +617,9 @@ module.exports = {
     stripTags:
     function (str){
         return stripTags(str);
-    }
+	},
+	apiAuthorizedFetch:
+	async function(route){
+		return await apiAuthorizedFetch(route);
+	}
 }
