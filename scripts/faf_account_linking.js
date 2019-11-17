@@ -138,8 +138,8 @@ async function start (discordId){
                     return;
                 }
                 const authorId = currentTokens[token];
-                const login = req.user.data.attributes.login;
-                const id = req.user.data.id;
+                const login = req.user.data.attributes.userName;
+                const id = req.user.data.attributes.userId;
                 status.emit('success', login, id, authorId);
                 
                 delete currentTokens[token];
