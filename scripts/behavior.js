@@ -1971,7 +1971,7 @@ async function fetchMapVersions(pageSize, db, apiUrl, callback){
                             case "map":
                                 if (mapVersion.mapId == thisData.id){
                                     mapVersion.displayName = thisData.attributes.displayName;
-									mapVersion.authorId = thisData.relationships.author.data.id;
+                                    if (thisData.relationships.author.data) mapVersion.authorId = thisData.relationships.author.data.id;
                                 }
                                 break;
 
