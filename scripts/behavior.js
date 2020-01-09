@@ -863,7 +863,9 @@ function initializeIrc(settings){
         }
     });
     for (let k in settings['allowed-bridges']){
-        ircUplink.channels.push("#"+k);
+        if (ircUplink.channels.indexOf("#" + k) === -1) {
+            ircUplink.channels.push("#" + k);
+        }
     }
     startIrc(settings);
 }
@@ -1470,13 +1472,17 @@ function formatIrcMessage(authorString, messageString){
 }
 
 /// Sends a message received from the IRC
-function sendFromIrc(channelName, authorString, messageString){
-	for (let i = 0; i < receivers[channelName].length; i++){
-		let channel = receivers[channelName][i];
-		if (channel != undefined){
-			sendMessage(channel, '**'+authorString+'**: '+messageString);
-		}
+function sendFromIrc(channelName, authorString, messageString) {
+    if (!receivers[channelName]) {
+        return;
 	}
+
+	for (let i = 0; i < receivers[channelName].length; i++) {
+        let channel = receivers[channelName][i];
+        if (channel !== undefined) {
+            sendMessage(channel, '**' + authorString + '**: ' + messageString);
+        }
+    }
 }
 /// PMS welcome message to the user
 function sendWelcomeMessageTo(guildMember){
