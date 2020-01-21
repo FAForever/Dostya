@@ -10,48 +10,48 @@ const status = new EventEmitter();
 let client;
 let reinitializing = false;
 
-function initializeClient(callback){
-	client = new irc.Client(
-		'faforever.com', 
-		'_Discord', {
-		userName: '_Discord-Uplink',
-		realName: '_Discord-Dostya-Uplink',
-		port: 8067,
-		autoRejoin: false,
-		autoConnect: true,
-		retryCount: 0,
-		retryDelay: 2000,
-		stripColors: true,
-		channels: channels,
-	});
-	
-	//CONNECTED!
-	client.on('registered', function (message){
-		utils.log('IRC uplink established !', '--', fakeGuild);
-		callback(client);
-	});
+function initializeClient(callback) {
+    client = new irc.Client(
+        'faforever.com',
+        '_Discord', {
+            userName: '_Discord-Uplink',
+            realName: '_Discord-Dostya-Uplink',
+            port: 8067,
+            autoRejoin: false,
+            autoConnect: true,
+            retryCount: 0,
+            retryDelay: 2000,
+            stripColors: true,
+            channels: channels,
+        });
 
-	//SOMETHING WENT WRONG
-	const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'kick'];
-	
-    for (let i = 0; i < errors.length; i++){
-        client.on(errors[i], function(message, a, b, c, d) {
-            if (!reinitializing){
-                switch (errors[i]){
+    //CONNECTED!
+    client.on('registered', function (message) {
+        utils.log('IRC uplink established !', '--', fakeGuild);
+        callback(client);
+    });
+
+    //SOMETHING WENT WRONG
+    const errors = ['error', 'abort', 'kill', 'netError', 'connectionEnd', 'kick'];
+
+    for (let i = 0; i < errors.length; i++) {
+        client.on(errors[i], function (message, a, b, c, d) {
+            if (!reinitializing) {
+                switch (errors[i]) {
                     default:
-                        utils.log('IRC error : ['+errors[i]+'] : ['+JSON.stringify(message)+']. Connection presumably dropped.', 'WW', fakeGuild);
+                        utils.log('IRC error : [' + errors[i] + '] : [' + JSON.stringify(message) + ']. Connection presumably dropped.', 'WW', fakeGuild);
                         status.emit("connectionClosed", errors[i]);
                         break;
-                    
+
                     case "kick":
-                        if (a === client.nick){
+                        if (a === client.nick) {
                             utils.log('IRC kicked. Connection presumably dropped.', 'WW', fakeGuild);
                             status.emit("connectionClosed", errors[i]);
                         }
                         break;
-                    
+
                     case "kill":
-                        if (message === client.nick){
+                        if (message === client.nick) {
                             utils.log('IRC kicked. Connection presumably dropped.', 'WW', fakeGuild);
                             status.emit("connectionClosed", errors[i]);
                         }
@@ -61,40 +61,41 @@ function initializeClient(callback){
         });
     }
 }
-function killClient(){
+
+function killClient() {
     reinitializing = true;
-    try{   
+    try {
         client.disconnect();
         client = undefined;
         delete client;
-    }
-    catch(e){
+    } catch (e) {
         utils.log('Error on IRC while disconnecting  - Bot was probably already disconnected', 'WW', fakeGuild);
         console.log(e);
     }
     reinitializing = false;
     utils.log('Client killed', '--', fakeGuild);
 }
+
 //Exports
-function sendIrcMessage(channel, str){
-	client.say("#"+channel, str);
+function sendIrcMessage(channel, str) {
+    client.say("#" + channel, str);
 }
 
 module.exports = {
-	sendIrcMessage: function(channel, str){
-		sendIrcMessage(channel, str);
-	},
-	initializeClient: function(callback){
-		return initializeClient(callback);
-	},
-	killClient: function(){
-		return killClient();
-	},
-	getClient: function(){
+    sendIrcMessage: function (channel, str) {
+        sendIrcMessage(channel, str);
+    },
+    initializeClient: function (callback) {
+        return initializeClient(callback);
+    },
+    killClient: function () {
+        return killClient();
+    },
+    getClient: function () {
         return client
     },
-	fakeGuild: fakeGuild,
-	channels: channels,
+    fakeGuild: fakeGuild,
+    channels: channels,
     status: status
 }
 

@@ -1,4 +1,4 @@
-FROM node:9-alpine
+FROM node:13.6.0-alpine
 
 # Create app directory
 WORKDIR /usr/src/dostya
