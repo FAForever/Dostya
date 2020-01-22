@@ -21,14 +21,16 @@ async function initialize(guilds) {
     const guildList = guilds.array();
     for (let k in guildList) {
         const guild = guildList[k];
-        const db = await initializeGuildDatabase(guild);
+        await initializeGuildDatabase(guild);
     }
     utils.log("Guilds database initialization finished", "--", fakeGuild);
     isInitialized = true;
 }
 
 async function takeAction(ACTION, guild, target, author, str = "", revokeAt) {
-    if (!isInitialized) return false;
+    if (!isInitialized) {
+        return false;
+    }
     const db = await getGuildDatabase(guild);
     let notification;
     if (str.length > 0) {
@@ -63,13 +65,18 @@ async function takeAction(ACTION, guild, target, author, str = "", revokeAt) {
         case ACTIONS.BAN:
             target.ban(notification);
             const modActionId = await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);
-            db.run("INSERT INTO bans (moderator_action_id, target_id, unban_at) VALUES ('" + modActionId + "', '" + target.id + "', " + revokeAt + ")");
+            db.run(
+                "INSERT INTO bans (moderator_action_id, target_id, unban_at) VALUES (?, ?, ?)",
+                modActionId,
+                target.id,
+                revokeAt
+            );
             break;
 
         case ACTIONS.UNBAN:
             const bans = await guild.fetchBans();
             if (utils.isNumeric(target.id)) {
-                db.run("DELETE FROM bans WHERE target_id=" + target.id + "");
+                db.run("DELETE FROM bans WHERE target_id = ?", target.id);
             }
             if (bans.has(target.id)) {
                 await logModeratorAction(db, target.id, author.id, sqlStr, ACTION);

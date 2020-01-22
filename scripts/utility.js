@@ -132,8 +132,6 @@ function httpFetch(address, callback, isSecure) {
     let method = isSecure ? https.get : http.get;
 
     method(address, (res) => {
-        //console.log("statusCode:", res.statusCode);
-        //console.log("headers:", res.headers);
         let ok = false;
         switch (res.statusCode) {
             default:
@@ -162,19 +160,18 @@ function httpFetch(address, callback, isSecure) {
         }
 
         if (ok) {
-
-            let d = "";
+            let responseData = "";
 
             res.setEncoding("utf8");
 
             res.on("readable", function () {
                 const chunk = this.read() || "";
 
-                d += chunk;
+                responseData += chunk;
             });
 
             res.on("end", function () {
-                callback(d);
+                callback(responseData);
             });
 
         } else {

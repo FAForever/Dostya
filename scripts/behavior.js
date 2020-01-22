@@ -702,7 +702,7 @@ function initializeMapWatching(settings, client) {
     setInterval(function () {
         fetchMapVersions(settings["map-check-page-size"], db, settings["urls"]["data"], function (message) {
             client.guilds.forEach(function (guildName, guildId) {
-                const channels = utils.getSpecifics({"id": guildId})["map-watch-channels"];
+                const channels = utils.getSpecifics({"id": guildId, "name": guildName})["map-watch-channels"];
                 for (let i = 0; i < channels.length; i++) {
                     const channel = client.channels.get(channels[i]);
                     if (channel != undefined) sendMessage(channel, message);
