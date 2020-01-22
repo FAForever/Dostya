@@ -14,7 +14,6 @@ const crypto = require('crypto');
 const session = require('express-session');
 const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2');
-const path = require('path');
 
 const credentialsPath = process.cwd() + '/_private/session.json';
 try {
@@ -194,4 +193,5 @@ module.exports = {
     cleanListeners: function () {
         return cleanListeners();
     }
-}
+};
+

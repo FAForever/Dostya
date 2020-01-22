@@ -2,7 +2,6 @@
 const settings = require(process.cwd() + "/configuration/settings.json");
 const GUILD_TRACKER_FILENAME = "tracker.txt";
 const GUILD_SPECIFICS_FILENAME = "specifics.json";
-const logPath = "./_private/logs";
 const identitiesPath = "./_private/identities";
 
 const fs = require("fs");
@@ -87,7 +86,7 @@ function getTrackerFile(guild) {
     return getGuildIdentityPath(guild) + "/" + GUILD_TRACKER_FILENAME;
 }
 
-function getSpecifics(guild) {
+function getSpecifics(guild) { // todo: to db
     const guildPath = getGuildIdentityPath(guild);
     if (!fs.existsSync(guildPath + "/" + GUILD_SPECIFICS_FILENAME)) {
         writeSpecifics(guild, defaultSpecifics);

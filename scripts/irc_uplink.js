@@ -76,27 +76,19 @@ function killClient() {
     utils.log('Client killed', '--', fakeGuild);
 }
 
-//Exports
 function sendIrcMessage(channel, str) {
-    client.say("#" + channel, str);
+    console.log("sendIrcMessage -------------------");
+    console.log(channel.name, str);
+    console.log("-------------------");
+    // client.say("#" + channel, str); // TODO: remove
 }
 
 module.exports = {
-    sendIrcMessage: function (channel, str) {
-        sendIrcMessage(channel, str);
-    },
-    initializeClient: function (callback) {
-        return initializeClient(callback);
-    },
-    killClient: function () {
-        return killClient();
-    },
-    getClient: function () {
-        return client
-    },
-    fakeGuild: fakeGuild,
-    channels: channels,
-    status: status
-}
-
-//Client.nick
+    sendIrcMessage,
+    initializeClient,
+    killClient,
+    client,
+    fakeGuild,
+    channels,
+    status,
+};
