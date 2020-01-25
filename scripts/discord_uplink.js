@@ -9,6 +9,7 @@ const db = require("./db");
 const serverApi = require("./behavior/server_api");
 const rss = require("./behavior/rss");
 const ban = require("./behavior/ban");
+const behavior = require("./behavior");
 
 /// Variable initialization
 let currentCooldown = {};
@@ -77,11 +78,11 @@ client.on("message", message => {
         return;
     }
 
-    commands.aliasCommand(message, settings);
+    discord.aliasCommand(message, settings);
 
     commands.onPrefixFound(message, settings, utils, function (command, commandArgs) {
-        commands.executeCommand(
-            command, commandArgs, currentCooldown[message.guild.id], message, settings, utils,
+        behavior.executeCommand(
+            command, commandArgs, currentCooldown[message.guild.id], message,
             onCommandExecuted.bind(this, command, message, commandArgs)
         );
     });
@@ -104,7 +105,7 @@ function onCommandExecuted(command, message, commandArgs, state, err) {
         /// 0 means the command executed gracefully
         case commands.COMMAND_SUCCESS:
             utils.log("EOI with " + message.author.username + "", "OK", message.guild);
-            commands.startCooldown(settings, currentCooldown, message.guild.id);
+            irc.startCooldown(settings, currentCooldown, message.guild.id);
             break;
 
         /// 1 means the command could be executed because of cooldown

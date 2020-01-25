@@ -1,5 +1,5 @@
 const utils = require("../utility");
-const discord = require("discord");
+const discord = require("./discord");
 
 /// Adds a recording to play with a user-registered command.
 function addRecord(guild, settings, key, message) {

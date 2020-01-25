@@ -12,7 +12,7 @@ function fetchReplay(command, replayIdOrName, apiUrl, callback) {
         fetchUrl = apiUrl + 'game?filter=playerStats.player.login=="' + replayIdOrName + '"&sort=-endTime&page[size]=1&' + includes;
     }
 
-    utils.httpsFetch(fetchUrl, function (d) {
+    utils.httpFetch(fetchUrl, function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;
@@ -198,7 +198,7 @@ function fetchReplay(command, replayIdOrName, apiUrl, callback) {
 
 function fetchLadderPool(apiUrl, callback) {
 
-    utils.httpsFetch(apiUrl + 'ladder1v1Map?include=mapVersion.map', function (d) {
+    utils.httpFetch(apiUrl + 'ladder1v1Map?include=mapVersion.map', function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;
@@ -282,7 +282,7 @@ function fetchMap(mapNameOrId, apiUrl, callback) {
     }
     const fetchUrl = apiUrl + 'map?filter=' + filter + '&page[size]=1&include=versions,author';
 
-    utils.httpsFetch(fetchUrl, function (d) {
+    utils.httpFetch(fetchUrl, function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;
@@ -402,7 +402,7 @@ async function fetchMapVersions(pageSize, db, apiUrl, callback) {
 
     const fetchUrl = apiUrl + 'mapVersion?page[size]=' + pageSize + '&include=map,map.author&sort=-createTime';
     utils.log("Fetching new map versions", "++");
-    utils.httpsFetch(fetchUrl, async function (d) {
+    utils.httpFetch(fetchUrl, async function (d) {
         if (Number.isInteger(d)) {
             utils.log("Server returned the error `" + d + "`.", "XX");
             return;
@@ -516,7 +516,7 @@ async function fetchMapVersions(pageSize, db, apiUrl, callback) {
 
 function fetchWikiArticle(searchTerm, wikiUrl, callback) {
 
-    utils.httpsFetch(wikiUrl + 'api.php?action=query&list=search&srsearch=' + searchTerm + '&format=json&srlimit=1&srwhat=title', function (d) {
+    utils.httpFetch(wikiUrl + 'api.php?action=query&list=search&srsearch=' + searchTerm + '&format=json&srlimit=1&srwhat=title', function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;
@@ -524,7 +524,6 @@ function fetchWikiArticle(searchTerm, wikiUrl, callback) {
 
         const data = JSON.parse(d);
         if (data != undefined && data.query != undefined && data.query.searchinfo.totalhits > 0) {
-
             const hit = data.query.search[0]; //For multiple results, will have to tweak this in a for loop.
 
             let embedMes = {
@@ -532,16 +531,12 @@ function fetchWikiArticle(searchTerm, wikiUrl, callback) {
                 "embed": {
                     "title": "**Click here to access wiki page**",
                     "url": wikiUrl + "index.php?title=" + hit.title.replace(/( )/g, "%20") + "",
+                    "description": hit.title,
                     "color": 0xFF0000,
                     "thumbnail": {
                         "url": wikiUrl + "images/icon.png"
                     },
-                    "fields": [
-                        {
-                            "name": "" + hit.title + "",
-                            "value": hit.snippet.replace(/<{1}[^<>]{1,}>{1}/g, "")
-                        }
-                    ]
+                    "fields": []
                 }
             };
 
@@ -566,11 +561,11 @@ function fetchUnitData(unitID, dbAddress, callback) {
 
         const data = JSON.parse(d);
 
-        if (data != undefined && data.BlueprintType != undefined && data.BlueprintType == "UnitBlueprint") {
+        if (data != undefined && data.BlueprintType !== undefined && data.BlueprintType === "UnitBlueprint") {
 
             ////NAME FORMAT
             let cuteName = '';
-            if (data.General.UnitName != undefined) {
+            if (data.General.UnitName !== undefined) {
                 cuteName = '"' + data.General.UnitName.replace(/<{1}[^<>]{1,}>{1}/g, "") + '" ';
             }
 
@@ -610,7 +605,7 @@ function fetchUnitData(unitID, dbAddress, callback) {
 
 /// Fetches clan info and formats it as an embed message
 function fetchClan(clanNameOrTag, apiUrl, callback) {
-    utils.httpsFetch(apiUrl + 'clan?filter=name=="' + clanNameOrTag + '",tag=="' + clanNameOrTag + '"&include=memberships.player&fields[player]=login&fields[clanMembership]=createTime,player&fields[clan]=name,description,websiteUrl,createTime,tag,leader', function (d) {
+    utils.httpFetch(apiUrl + 'clan?filter=name=="' + clanNameOrTag + '",tag=="' + clanNameOrTag + '"&include=memberships.player&fields[player]=login&fields[clanMembership]=createTime,player&fields[clan]=name,description,websiteUrl,createTime,tag,leader', function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;

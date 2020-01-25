@@ -30,16 +30,16 @@ function onPrefixFound(message, settings, utils, callback) {
         if (validPref) {
             command = message.content.slice(settings.prefixes[i].length, message.content.length);	/// Removing prefix
 
-            let arguments = null;
+            let cmdArguments = null;
 
             if (command.indexOf(" ") > -1) {
                 const index = command.indexOf(" ");
-                arguments = command.substring(index + 1, command.length);
+                cmdArguments = command.substring(index + 1, command.length);
                 command = command.substring(0, index);
             }
 
             command = command.toLowerCase();
-            callback(command, arguments);
+            callback(command, cmdArguments);
         }
     }
 }

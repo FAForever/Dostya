@@ -127,7 +127,8 @@ function getGuildIdentityPath(guild) {
     return guildPath;
 }
 
-function httpFetch(address, callback, isSecure) {
+function httpFetch(address, callback) {
+    let isSecure = address.indexOf("https") === 0;
     let method = isSecure ? https.get : http.get;
 
     method(address, (res) => {
@@ -180,10 +181,6 @@ function httpFetch(address, callback, isSecure) {
     }).on("error", (e) => {
         log("[" + address + "] ==> HTTP request returned following error : [" + (e) + "]. Doing nothing.", "WW");
     });
-}
-
-function httpsFetch(address, callback) {
-    httpFetch(address, callback, true);
 }
 
 function checkToken(privateDir, tokenPath) {
@@ -319,7 +316,7 @@ module.exports = {
     getIdFromString,
     track,
     httpFetch,
-    httpsFetch,
+    httpFetch,
     getFactionColor,
     getFaction,
     isAlphanumeric,

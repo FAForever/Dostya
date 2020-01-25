@@ -88,7 +88,7 @@ function defineSpecific(message, property, type, data) {
 /// Searches for a player and returns result as a block message
 function fetchPlayerList(searchTerm, limit, apiUrl, callback) {
 
-    utils.httpsFetch(apiUrl + 'player?filter=login=="' + searchTerm + '*"&page[limit]=' + (limit + 1) + '', function (d) {
+    utils.httpFetch(apiUrl + 'player?filter=login=="' + searchTerm + '*"&page[limit]=' + (limit + 1) + '', function (d) {
         if (Number.isInteger(d)) {
             callback("Server returned the error `" + d + "`.");
             return;
@@ -122,10 +122,10 @@ function fetchPlayerList(searchTerm, limit, apiUrl, callback) {
 /// Fetches player info and formats it as an embed message
 function fetchPlayer(playerName, apiUrl, callback) {
 
-    utils.httpsFetch(apiUrl + 'player?filter=login=="' + playerName + '"&include=clanMembership.clan,globalRating,ladder1v1Rating,names,avatarAssignments.avatar', function (d) {
+    utils.httpFetch(apiUrl + 'player?filter=login=="' + playerName + '"&include=clanMembership.clan,globalRating,ladder1v1Rating,names,avatarAssignments.avatar', function (d) {
 
         const data = JSON.parse(d);
-        if (data.data != undefined && data.data.length > 0) {
+        if (data.data !== undefined && data.data.length > 0) {
 
             let player = {
                 id: data.data[0].id,

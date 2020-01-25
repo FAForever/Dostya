@@ -30,7 +30,7 @@ async function initializeBans(settings, client) {
 
 
 /// Will generate a bans.takeAction() from the action command message
-async function takeActionFromMessage(message, action, arguments) {
+async function takeActionFromMessage(message, action, commanddArguments) {
     let ACTION;
     switch (action) {
         case "warn":
@@ -48,14 +48,14 @@ async function takeActionFromMessage(message, action, arguments) {
             break;
     }
 
-    let i = arguments.indexOf(" ");
-    let data = [arguments.slice(0, i), arguments.slice(i + 1)];
+    let i = commanddArguments.indexOf(" ");
+    let data = [commanddArguments.slice(0, i), commanddArguments.slice(i + 1)];
 
     let targetId;
     let str = '';
 
     if (i < 0) {
-        targetId = utils.getIdFromString(arguments);
+        targetId = utils.getIdFromString(commanddArguments);
     } else {
         targetId = utils.getIdFromString(data[0]);
         str = data[1];

@@ -67,7 +67,6 @@ function killClient() {
     try {
         client.disconnect();
         client = undefined;
-        delete client;
     } catch (e) {
         utils.log('Error on IRC while disconnecting  - Bot was probably already disconnected', 'WW', fakeGuild);
         console.log(e);

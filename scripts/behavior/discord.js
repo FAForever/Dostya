@@ -151,7 +151,7 @@ function sendMessage(channel, msgContent) {
         utils.log("SendDiscordMessage ________________", "DD");
         utils.log("Sent message " + msgContent + " on " + channel.name, "DD", channel.guild);
         utils.log("________________", "DD");
-        // return channel.send(msgContent); // TODO: uncomment!
+        return channel.send(msgContent);
     }
     return utils.emptyPromise();
 }
@@ -271,7 +271,7 @@ function blacklistUser(author, userId, guild) {
 
 
 /// Reacts with a little W A I T on the last command that couldn't be fired because of cooldown
-function animateCooldown(message, cooldown) {
+function animateCooldown(message) {
     if (lastAnimatedMessage.react != undefined) {
         lastAnimatedMessage.clearReactions();
     }
@@ -391,7 +391,6 @@ function aliasCommand(message, settings) {
         }
     }
 }
-
 
 module.exports = {
     sendWelcomeMessageTo,
