@@ -269,7 +269,7 @@ function unLogMapsHere(command, commandArguments, message, callback) {
 
 function flushMaps(command, commandArguments, message, callback) {
     utils.log("Maps table flushed by " + message.author.username, "!!");
-    command.flushmaps();
+    command.flushMaps();
     callback(commands.COMMAND_SUCCESS);
 }
 

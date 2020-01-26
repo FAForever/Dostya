@@ -19,8 +19,6 @@ function initializeDatabase(settings) {
 }
 
 
-console.log("initialized DB");
-
 module.exports = {
     db,
     initializeDatabase,

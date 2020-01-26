@@ -80,7 +80,8 @@ client.on("message", message => {
 
     discord.aliasCommand(message, settings);
 
-    commands.onPrefixFound(message, settings, utils, function (command, commandArgs) {
+    commands.onPrefixFound(message, function (command, commandArgs) {
+        console.log(currentCooldown[message.guild.id]);
         behavior.executeCommand(
             command, commandArgs, currentCooldown[message.guild.id], message,
             onCommandExecuted.bind(this, command, message, commandArgs)

@@ -1,5 +1,7 @@
 const utils = require("../utility");
 const db = require("../db").db;
+const settings = require("../../configuration/settings.json");
+const {COMMANDS_MAP} = require("../behavior");
 
 const COMMAND_SUCCESS = 0;
 const COMMAND_COOL_DOWN = 1;
@@ -14,23 +16,35 @@ function isRestrictedCommand(str_command, guild) {
 }
 
 
-/// Executes function if prefix is found
-function onPrefixFound(message, settings, utils, callback) {
-    for (let i = 0; i < settings.prefixes.length; i++) {	//Check if message includes on of the prefixes
-        const thisPref = settings.prefixes[i];
-        let validPref = true;
-        let command;
-        for (let j = 0; j < thisPref.length; j++) {
-            let thisChar = message.content.charAt(j);
-            let thisPrefChar = thisPref.charAt(j);
-            if (thisChar !== thisPrefChar) {
-                validPref = false;
+function onCommandFound(message, callback) {
+    for (let i = 0; i < settings.prefixes.length; i++) {
+        const prefix = settings.prefixes[i];
+        let validPref = message.startsWith(prefix);
+        if (validPref) {
+            message = message.replace(prefix, "").trim();
+        }
+    }
+
+    for (let command in COMMANDS_MAP) {
+        if (COMMANDS_MAP.hasOwnProperty(command)) {
+            if (message.startsWith(command)) {
+                // TODO: continue from here
+                // callback(message, );
             }
         }
-        if (validPref) {
-            command = message.content.slice(settings.prefixes[i].length, message.content.length);	/// Removing prefix
+    }
+}
 
-            let cmdArguments = null;
+/// Executes function if prefix is found
+function onPrefixFound(message, callback) {
+    for (let i = 0; i < settings.prefixes.length; i++) {	// Check if message includes on of the prefixes
+        const thisPref = settings.prefixes[i];
+        let validPref = message.startsWith(thisPref);
+
+        if (validPref) {
+            let command = message.content.slice(settings.prefixes[i].length, message.content.length);	/// Removing prefix
+
+            let cmdArguments = command.split(" ").;
 
             if (command.indexOf(" ") > -1) {
                 const index = command.indexOf(" ");
@@ -44,7 +58,7 @@ function onPrefixFound(message, settings, utils, callback) {
     }
 }
 
-function flushmaps() {
+function flushMaps() {
     db.run("DELETE FROM watched_maps", function () {
         utils.log("Called 'flushmaps'");
     });
@@ -57,7 +71,7 @@ module.exports = {
     COMMAND_MISUSE,
     COMMAND_FORBIDDEN,
 
-    flushmaps,
+    flushMaps,
     isRestrictedCommand,
     onPrefixFound
 };
