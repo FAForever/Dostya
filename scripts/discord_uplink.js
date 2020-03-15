@@ -11,13 +11,13 @@ const rss = require("./behavior/rss");
 const ban = require("./behavior/ban");
 const behavior = require("./behavior");
 
-/// Variable initialization
+// Variable initialization
 let currentCooldown = {};
 const settings = require("../configuration/settings.json");
 
 const client = new Discord.Client();
 
-/// Client ready
+// Client ready
 client.on("ready", () => {
     utils.log("Dostya ready !");
     client.user.setActivity("!help");
@@ -30,25 +30,26 @@ client.on("ready", () => {
     ban.initializeBans(settings, client).then();
 });
 
-/// Client error
+// Client error
 client.on("error", function (err) {
     utils.log("Dostya encountered an error: " + err.message, "WW");
 });
 
-/// Client disconnect
+// Client disconnect
 client.on("disconnect", () => {
     utils.log("Dostya has disconnected", "WW");
 });
 
-/// Refreshing IRC receivers
+// Refreshing IRC receivers
 client.on("guildCreate", guild => {
     utils.log("Dostya has been added to guild " + guild.name + "", "!!");
     refreshReceivers(settings, client);
     refreshAnnouncers(settings, client);
 });
+
 client.on("channelCreate", guild => {
     if (guild.name) {
-        /// If guild.name is undefined, it is very likely this "channel" is a PM channel. No need to refresh the IRC receivers in that case.
+        // If guild.name is undefined, it is very likely this "channel" is a PM channel. No need to refresh the IRC receivers in that case.
         refreshReceivers(settings, client);
         refreshAnnouncers(settings, client);
     }
@@ -58,21 +59,21 @@ client.on("channelDelete", guild => {
     refreshAnnouncers(settings, client);
 });
 
-/// Adding guildmember
+// Adding guildmember
 client.on("guildMemberAdd", guildMember => {
     utils.log("User " + guildMember.user.username + "  joined the guild", "TR", guildMember.guild);
     utils.track(guildMember);
     discord.sendWelcomeMessageTo(guildMember)
 });
 
-/// Received message
+// Received message
 client.on("message", message => {
-    /// A few cases when the bot should be doing nothing : either empty guild or message is from myself
+    // A few cases when the bot should be doing nothing : either empty guild or message is from myself
     if (message.author.id === client.user.id || !message.guild) {
         return;
     }
 
-    /// IRC transmission - if needed
+    // IRC transmission - if needed
     if (settings["allowed-bridges"][message.channel.name] !== undefined) {
         irc.upLink(message.channel.name, message, settings);
         return;
@@ -87,7 +88,6 @@ client.on("message", message => {
             onCommandExecuted.bind(this, command, message, commandArgs)
         );
     });
-
 });
 
 function onCommandExecuted(command, message, commandArgs, state, err) {
@@ -103,28 +103,28 @@ function onCommandExecuted(command, message, commandArgs, state, err) {
             utils.log("Invalid command state - Please check command [" + command + "] with argument [" + commandArgs + "]", "><", message.guild);
             break;
 
-        /// 0 means the command executed gracefully
+        // 0 means the command executed gracefully
         case commands.COMMAND_SUCCESS:
             utils.log("EOI with " + message.author.username + "", "OK", message.guild);
             irc.startCooldown(settings, currentCooldown, message.guild.id);
             break;
 
-        /// 1 means the command could be executed because of cooldown
+        // 1 means the command could be executed because of cooldown
         case commands.COMMAND_COOL_DOWN:
             utils.log("On cooldown, ignoring [" + command + "]", "--", message.guild);
             break;
 
-        /// 2 is command not found
+        // 2 is command not found
         case commands.COMMAND_UNKNOWN:
             utils.log("Could not find [" + command + "]", "--", message.guild);
             break;
 
-        /// 3 is command misuse
+        // 3 is command misuse
         case commands.COMMAND_MISUSE:
             utils.log("Misuse of command [" + command + "]", "--", message.guild);
             break;
 
-        /// 4 is command forbidden
+        // 4 is command forbidden
         case commands.COMMAND_FORBIDDEN:
             utils.log("Command forbidden in current state [" + command + "]", "--", message.guild);
             break;

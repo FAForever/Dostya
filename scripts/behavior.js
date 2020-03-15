@@ -383,8 +383,6 @@ function subscribe(command, commandArguments, message, callback) {
 
     discord.subscribe(subscribeRoleName, message)
         .then(callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
-
-
 }
 
 function unsubscribe(command, commandArguments, message, callback) {
