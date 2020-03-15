@@ -464,6 +464,25 @@ const COMMANDS_MAP = {
     roles,
 };
 
+
+function onPrefixFound(message, callback) {
+    let content = message.content;
+    for (let i = 0; i < settings.prefixes.length; i++) {
+        const prefix = settings.prefixes[i];
+        if (content.startsWith(prefix)) {
+            content = content.replace(prefix, "").trim();
+            break;
+        }
+    }
+
+    let command = content.split(" ", 1)[0].toLowerCase();
+    if (COMMANDS_MAP[command]) {
+        let commandArguments = command.split(" ").slice(1).join(" ");
+        callback(command, commandArguments);
+    }
+}
+
+
 function executeCommand(command, commandArguments, coolDown, message, callback) {
     const isDeveloper = user.isDeveloper(message.author, settings);
     const isModerator = user.isModerator(message.member, message.guild);
@@ -496,6 +515,7 @@ function executeCommand(command, commandArguments, coolDown, message, callback) 
 }
 
 module.exports = {
+    onPrefixFound,
     executeCommand,
     COMMANDS_MAP,
 };

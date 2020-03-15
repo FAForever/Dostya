@@ -15,19 +15,13 @@ function roleExists(roleName, guild) {
 /// Checks if the function is only for developers
 function isDeveloperCommand(command, settings) {
     const devCmds = settings['dev-only-commands'];
-    if (devCmds.indexOf(command) > -1) {
-        return true;
-    }
-    return false;
+    return devCmds.indexOf(command) > -1;
 }
 
 /// Checks if the user is a moderator on this guild
 function isDeveloper(author, settings) {
     const devs = settings.devs;
-    if (devs.indexOf(author.id + "") > -1) {
-        return true;
-    }
-    return false;
+    return devs.indexOf(author.id + "") > -1;
 }
 
 /// Removes user from the blacklist

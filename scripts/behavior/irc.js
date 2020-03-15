@@ -64,7 +64,7 @@ function startIrc() {
             for (let i = 0; i < ircUpLink.channels.length; i++) {
                 const channelName = ircUpLink.channels[i];
                 ircClient.on("message" + channelName, function (author, message) {
-                    if (author != ircClient.nick) {
+                    if (author !== ircClient.nick) {
                         utils.log("[FIRC] [FROM " + author + "#" + channelName + "] " + author + ": " + message, "++", ircUpLink.fakeGuild);
                         sendFromIrc(channelName.substr(1, channelName.length), author, message);
                     }

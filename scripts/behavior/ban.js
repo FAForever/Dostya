@@ -1,4 +1,6 @@
-const bans = require('../bans.js');
+const bans = require('../bans');
+const utils = require("../utility");
+const {logForModerators} = require("./discord");
 
 /// Initialize ban events
 async function initializeBans(settings, client) {
@@ -30,7 +32,7 @@ async function initializeBans(settings, client) {
 
 
 /// Will generate a bans.takeAction() from the action command message
-async function takeActionFromMessage(message, action, commanddArguments) {
+async function takeActionFromMessage(message, action, commandArguments) {
     let ACTION;
     switch (action) {
         case "warn":
@@ -48,14 +50,14 @@ async function takeActionFromMessage(message, action, commanddArguments) {
             break;
     }
 
-    let i = commanddArguments.indexOf(" ");
-    let data = [commanddArguments.slice(0, i), commanddArguments.slice(i + 1)];
+    let i = commandArguments.indexOf(" ");
+    let data = [commandArguments.slice(0, i), commandArguments.slice(i + 1)];
 
     let targetId;
     let str = '';
 
     if (i < 0) {
-        targetId = utils.getIdFromString(commanddArguments);
+        targetId = utils.getIdFromString(commandArguments);
     } else {
         targetId = utils.getIdFromString(data[0]);
         str = data[1];
@@ -68,6 +70,7 @@ async function takeActionFromMessage(message, action, commanddArguments) {
         if (ACTION !== bans.ACTIONS.UN_BAN) {
             target = await message.guild.members.get(targetId);
         }
+        return true;
     } catch (e) {
         if (e) {
             logForModerators(author.guild, "The action could not be completed because of an user fetching error. Is the targeted still user on this server ?");
@@ -78,7 +81,6 @@ async function takeActionFromMessage(message, action, commanddArguments) {
         if (!target) {
             logForModerators(author.guild, "The action could not be completed because the target is invalid.\nIs the target still on this server ? Did you type their ID correctly ?");
             utils.log("Discarding moderator action from " + author.user.username + " because of invalid target", "WW", message.guild);
-            return false;
         }
 
         /// Ban duration indicator
@@ -95,8 +97,6 @@ async function takeActionFromMessage(message, action, commanddArguments) {
         }
 
         await bans.takeAction(ACTION, message.guild, target, author, str, revokeAt);
-
-        return true;
     }
 }
 

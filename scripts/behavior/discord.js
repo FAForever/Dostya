@@ -118,7 +118,9 @@ async function unsubscribe(roleName, message) {
     }
 }
 
-/// Send the tracker file to the users on demand
+/**
+ * Send the tracker file to the users on demand
+ */
 function sendTrackerFile(author, guild) {
     const trackerFile = utils.getTrackerFile(guild);
     if (fs.existsSync(trackerFile)) {
@@ -130,7 +132,9 @@ function sendTrackerFile(author, guild) {
     }
 }
 
-/// PMS welcome message to the user
+/**
+ * PMS welcome message to the user
+ */
 function sendWelcomeMessageTo(guildMember) {
     guildMember.send("Hello and Welcome to the **FAF Discord Server**. We are quite active and are happy to help with any problems you may have. \n\n__**Useful Links**__\nForums: http://forums.faforever.com/index.php \nWiki: https://wiki.faforever.com/index.php?title=Main_Page \nClient Download: https://faforever.com/client")
         .catch(e => {
@@ -138,7 +142,9 @@ function sendWelcomeMessageTo(guildMember) {
         });
 }
 
-/// Sends message to the channel
+/**
+ * Sends message to the channel
+ */
 function sendMessage(channel, msgContent) {
     let canSend = true;
 
@@ -149,14 +155,16 @@ function sendMessage(channel, msgContent) {
 
     if (canSend) {
         utils.log("SendDiscordMessage ________________", "DD");
-        utils.log("Sent message " + msgContent + " on " + channel.name, "DD", channel.guild);
+        utils.log("Sent message '" + msgContent + "' on " + channel.name, "DD", channel.guild);
         utils.log("________________", "DD");
-        return channel.send(msgContent);
+        // return channel.send(msgContent); // TODO: remove
     }
     return utils.emptyPromise();
 }
 
-/// Sends records on this channel
+/**
+ * Sends records on this channel
+ */
 function sendRecords(channel, settings) {
     let message = '```';
     const specs = utils.getSpecifics(channel.guild);
@@ -175,7 +183,9 @@ function sendRecords(channel, settings) {
     sendMessage(channel, message + "```");
 }
 
-/// Display link table in a channel with ASCII character
+/**
+ * Display link table in a channel with ASCII character
+ */
 async function sendLinktable(channel, settings) {
     return db.all('SELECT * FROM account_links ORDER BY create_time', async function (err, rows) {
         if (err) {
@@ -272,7 +282,7 @@ function blacklistUser(author, userId, guild) {
 
 /// Reacts with a little W A I T on the last command that couldn't be fired because of cooldown
 function animateCooldown(message) {
-    if (lastAnimatedMessage.react != undefined) {
+    if (lastAnimatedMessage.react !== undefined) {
         lastAnimatedMessage.clearReactions();
     }
     message.react("🇼")

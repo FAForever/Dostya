@@ -81,8 +81,7 @@ client.on("message", message => {
 
     discord.aliasCommand(message, settings);
 
-    commands.onPrefixFound(message, function (command, commandArgs) {
-        console.log(currentCooldown[message.guild.id]);
+    behavior.onPrefixFound(message, function (command, commandArgs) {
         behavior.executeCommand(
             command, commandArgs, currentCooldown[message.guild.id], message,
             onCommandExecuted.bind(this, command, message, commandArgs)
@@ -134,13 +133,16 @@ function onCommandExecuted(command, message, commandArgs, state, err) {
 function refreshReceivers(settings, client) {
     utils.log("Refreshing receivers...", "--");
     irc.cleanReceivers();
-    for (let k in settings["allowed-bridges"]) {
-        if (settings["allowed-bridges"][k].length > 0) {
+    for (let allowedBridge in settings["allowed-bridges"]) {
+        if (
+            settings["allowed-bridges"].hasOwnProperty(allowedBridge)
+            && settings["allowed-bridges"][allowedBridge].length > 0
+        ) {
             for (let i = 0; i < client.guilds.array().length; i++) {
                 const guild = client.guilds.array()[i];
-                const channel = guild.channels.find("name", k);
+                const channel = guild.channels.find("name", allowedBridge);
                 if (channel != null && channel.type === "text") {
-                    irc.addToReceivers(k, channel);
+                    irc.addToReceivers(allowedBridge, channel);
                     utils.log("Added [" + guild.name + "] #" + channel.name + " to receivers", ">>", guild);
                 }
             }
@@ -154,11 +156,13 @@ function refreshAnnouncers(settings, client) {
     for (const guild of guilds.values()) {
         const specs = utils.getSpecifics(guild);
         const channelIds = specs["announcement-channels"];
-        for (let l in channelIds) {
-            const channelId = utils.getIdFromString(channelIds[l]);
-            const channel = guild.channels.find("id", channelId);
-            rss.addToAnnouncers(channel);
-            utils.log("Added [" + guild.name + "] #" + channel.name + " to announcers", ">>", guild);
+        for (let channelId in channelIds) {
+            if (channelIds.hasOwnProperty(channelId)) {
+                const channelId = utils.getIdFromString(channelIds[channelId]);
+                const channel = guild.channels.find("id", channelId);
+                rss.addToAnnouncers(channel);
+                utils.log("Added [" + guild.name + "] #" + channel.name + " to announcers", ">>", guild);
+            }
         }
     }
 }
