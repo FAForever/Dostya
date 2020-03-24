@@ -862,9 +862,13 @@ function initializeIrc(settings){
             restartIrc(settings, errorName);
         }
     });
+    utils.log("Adding allowed bridges");
     for (let k in settings['allowed-bridges']){
         if (ircUplink.channels.indexOf("#" + k) === -1) {
             ircUplink.channels.push("#" + k);
+            utils.log(`Added bridge ${"#" + k}`);
+        } else {
+            utils.log(`Ignoring bridge ${"#" + k}`);
         }
     }
     startIrc(settings);
