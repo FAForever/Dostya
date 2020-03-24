@@ -23,9 +23,12 @@
     "rss-watcher": "^1.4.0",
     "sqlite3": "^4.0.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^25.1.0"
+  },
   "scripts": {
-    "start": "node launch.js"
+    "start": "node launch.js",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
