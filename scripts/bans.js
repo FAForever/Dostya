@@ -30,7 +30,7 @@ async function initialize(guilds) {
 }
 
 async function takeAction(ACTION, guild, target, author, str = "", revokeAt) {
-    if (!isInitialized) {
+    if (!isInitialized || guild) {
         return false;
     }
     const db = await getGuildDatabase(guild);
