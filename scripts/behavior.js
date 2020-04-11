@@ -25,7 +25,7 @@ function escapeArguments(str) {
 }
 
 function ping(command, commandArguments, message,  callback) {
-    return discord.replyToMessage(message, "Dostya is still up.").then(callback(commands.COMMAND_SUCCESS));
+    return discord.replyToMessage(message, "Dostya is still up.").then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function searchUnit(command, commandArguments, message, callback) {
@@ -37,7 +37,7 @@ function searchUnit(command, commandArguments, message, callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchUnitData(commandArguments, settings.urls.unitDB, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -50,14 +50,14 @@ function wiki(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchWikiArticle(commandArguments, settings.urls.wiki, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
 function ladderPool(command, commandArguments, message,  callback) {
     serverApi.fetchLadderPool(settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -70,7 +70,7 @@ function replay(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchReplay(command, commandArguments, settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -82,7 +82,7 @@ function clan(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchClan(commandArguments, settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -94,7 +94,7 @@ function player(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     user.fetchPlayer(commandArguments, settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -106,7 +106,7 @@ function map(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchMap(commandArguments, settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
@@ -136,7 +136,7 @@ function help(command, commandArguments, message,  callback) {
 
 function sendTracker(command, commandArguments, message,  callback) {
     discord.sendTrackerFile(message.author, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function getDefinitions(command, commandArguments, message, callback) {
@@ -150,7 +150,7 @@ function getDefinitions(command, commandArguments, message, callback) {
         return;
     }
     user.defineSpecific(message, args[0], args[1], args[2])
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function restrict(command, commandArguments, message,  callback) {
@@ -159,7 +159,7 @@ function restrict(command, commandArguments, message,  callback) {
         return;
     }
     command.restrictCommand(message.author, commandArguments, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function unRestrict(command, commandArguments, message,  callback) {
@@ -168,22 +168,22 @@ function unRestrict(command, commandArguments, message,  callback) {
         return;
     }
     command.unrestrictCommand(message.author, commandArguments, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function restrictions(command, commandArguments, message,  callback) {
     command.sendRestrictions(message.author, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function blacklist(command, commandArguments, message,  callback) {
     if (commandArguments == null) {
         discord.sendBlacklist(message.author, message.guild)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
         return;
     }
     discord.blacklistUser(message.author, commandArguments, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function unBlacklist(command, commandArguments, message,  callback) {
@@ -192,7 +192,7 @@ function unBlacklist(command, commandArguments, message,  callback) {
         return;
     }
     discord.unblacklistUser(message.author, commandArguments, message.guild)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function kill(command, commandArguments, message,  callback) {
@@ -210,7 +210,7 @@ function fixIRCBridge(command, commandArguments, message,  callback) {
         msg = "Restart failed. The bridges may already be restarting.";
     }
     discord.sendMessage(message.channel, msg)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function link(command, commandArguments, message,  callback) {
@@ -225,7 +225,7 @@ function link(command, commandArguments, message,  callback) {
 
 function showLinks(command, commandArguments, message,  callback) {
     discord.sendLinkTable(message.channel, settings)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function unlink(command, commandArguments, message,  callback) {
@@ -312,7 +312,7 @@ function takeActionFromMessage(command, commandArguments, message, callback) {
     }
     commandArguments = escapeArguments(commandArguments);
     ban.takeActionFromMessage(message, command, commandArguments)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function userInfo(command, commandArguments, message, callback) {
@@ -327,9 +327,7 @@ function userInfo(command, commandArguments, message, callback) {
     }
     bans.getUserInfo(message.guild, id, function (content) {
         discord.logForModerators(message.guild, content);
-    }).then(
-        callback(commands.COMMAND_SUCCESS)
-    );
+    }).then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 function createRole(command, commandArguments, message, callback) {
@@ -341,12 +339,13 @@ function createRole(command, commandArguments, message, callback) {
 
     if (user.roleExists(roleName, message.guild)) {
         discord.sendMessage(message.channel, "Role already registered.")
-            .then(callback(commands.COMMAND_MISUSE));
+            .then(() => callback(commands.COMMAND_MISUSE));
         return;
     }
 
+    // TODO: fix this lines
     discord.createRole(roleName, message)
-        .then(callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS), () => callback(commands.COMMAND_SUCCESS)); // on reject after send message success? O_o
 }
 
 function deleteRole(command, commandArguments, message, callback) {
@@ -358,12 +357,13 @@ function deleteRole(command, commandArguments, message, callback) {
 
     if (!user.roleExists(delRoleName, message.guild)) {
         discord.sendMessage(message.channel, "Role not registered. Are you sure the spelling is correct?")
-            .then(callback(commands.COMMAND_MISUSE));
+            .then(() => callback(commands.COMMAND_MISUSE));
         return;
     }
 
+    // TODO: fix this lines
     user.deleteRole(delRoleName, message)
-        .then(callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS), () => callback(commands.COMMAND_SUCCESS));  // WTF? TEHRE IS NO PROMISE RETURN!
 }
 
 function subscribe(command, commandArguments, message, callback) {
@@ -375,12 +375,12 @@ function subscribe(command, commandArguments, message, callback) {
 
     if (!user.roleExists(subscribeRoleName, message.guild)) {
         discord.sendMessage(message.channel, "Unknown role. Are you sure the spelling is correct?")
-            .then(callback(commands.COMMAND_MISUSE));
+            .then(() => callback(commands.COMMAND_MISUSE));
         return;
     }
 
     discord.subscribe(subscribeRoleName, message)
-        .then(callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
 }
 
 function unsubscribe(command, commandArguments, message, callback) {
@@ -392,12 +392,13 @@ function unsubscribe(command, commandArguments, message, callback) {
 
     if (!user.roleExists(unsubscribeRoleName, message.guild)) {
         discord.sendMessage(message.channel, "Unknown role. Are you sure the spelling is correct?")
-            .then(callback(commands.COMMAND_MISUSE));
+            .then(() => callback(commands.COMMAND_MISUSE));
         return;
     }
 
+    // TODO: fix this lines
     discord.unsubscribe(unsubscribeRoleName, message)
-        .then(callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS), callback(commands.COMMAND_SUCCESS));  // another wtf code
 }
 
 function roles(command, commandArguments, message, callback) {
@@ -405,7 +406,7 @@ function roles(command, commandArguments, message, callback) {
 
     let subscriptionsMessage = specificsSubscriptions["registeredRoles"].join("\n");
     discord.sendMessage(message.channel, subscriptionsMessage)
-        .then(callback(commands.COMMAND_SUCCESS));
+        .then(() => callback(commands.COMMAND_SUCCESS));
 }
 
 const COMMANDS_MAP = {
@@ -466,7 +467,7 @@ function commandNotFound(command, message, callback) {
 
     if (specs["recorded-messages"][command]) {
         discord.sendMessage(message.channel, specs["recorded-messages"][command])
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     } else {
         callback(commands.COMMAND_UNKNOWN);
     }
