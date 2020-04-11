@@ -186,7 +186,7 @@ function sendRecords(channel, settings) {
 /**
  * Display link table in a channel with ASCII character
  */
-async function sendLinktable(channel, settings) {
+async function sendLinkTable(channel, settings) {
     return db.all('SELECT * FROM account_links ORDER BY create_time', async function (err, rows) {
         if (err) {
             utils.log("Error fetching rows for account linking", "WW", channel.guild);
@@ -412,7 +412,7 @@ module.exports = {
     unsubscribe,
     sendTrackerFile,
     sendRecords,
-    sendLinktable,
+    sendLinkTable,
     unlink,
     sendRestrictions,
     sendBlacklist,

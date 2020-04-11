@@ -1,3 +1,5 @@
+const Discord = require("discord.js"); // Used only for typings
+
 const bans = require("./bans");
 const commands = require("./behavior/commands");
 const discord = require("./behavior/discord");
@@ -22,21 +24,11 @@ function escapeArguments(str) {
     return str;
 }
 
-function commandNotFound(command, message, callback) {
-    const specs = utils.getSpecifics(message.guild);
-    if (specs["recorded-messages"][command]) {
-        discord.sendMessage(message.channel, specs["recorded-messages"][command])
-            .then(callback(commands.COMMAND_SUCCESS));
-    } else {
-        callback(commands.COMMAND_UNKNOWN);
-    }
-}
-
 function ping(command, commandArguments, message,  callback) {
     return discord.replyToMessage(message, "Dostya is still up.").then(callback(commands.COMMAND_SUCCESS));
 }
 
-function searchUnit(command, commandArguments, message,  callback) {
+function searchUnit(command, commandArguments, message, callback) {
     if (commandArguments == null) {
         callback(commands.COMMAND_MISUSE);
         return;
@@ -47,13 +39,12 @@ function searchUnit(command, commandArguments, message,  callback) {
         discord.sendMessage(message.channel, content)
             .then(callback(commands.COMMAND_SUCCESS));
     });
-
 }
 
-// TODO: fix wiki, it doesn't work
 function wiki(command, commandArguments, message,  callback) {
     if (commandArguments == null || !utils.isAlphanumeric(commandArguments.replace(/ /g, ""))) {
-        callback(commands.COMMAND_MISUSE);
+        callback(commands.COMMAND_MISUSE, "<search word>");
+        return;
     }
 
     commandArguments = escapeArguments(commandArguments);
@@ -70,11 +61,12 @@ function ladderPool(command, commandArguments, message,  callback) {
     });
 }
 
-function lastReplay(command, commandArguments, message,  callback) {
-    if (commandArguments == null || (command === "replay" && !utils.isNumeric(commandArguments))) {
-        callback(commands.COMMAND_MISUSE);
+function replay(command, commandArguments, message,  callback) {
+    if (commandArguments == null || !utils.isNumeric(commandArguments)) {
+        callback(commands.COMMAND_MISUSE, "<replay id>");
         return;
     }
+
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchReplay(command, commandArguments, settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
@@ -126,15 +118,20 @@ function searchPlayer(command, commandArguments, message,  callback) {
     commandArguments = escapeArguments(commandArguments);
     serverApi.fetchPlayerList(commandArguments, settings['player-search-limit'], settings.urls.data, function (content) {
         discord.sendMessage(message.channel, content)
-            .then(callback(commands.COMMAND_SUCCESS));
+            .then(() => callback(commands.COMMAND_SUCCESS));
     });
 }
 
 function help(command, commandArguments, message,  callback) {
     discord.sendMessage(
         message.author,
+        "Available commands: "  + Object.keys(COMMANDS_MAP).map(command => "!" + command).join(", ")
+    );
+    discord.sendMessage(
+        message.author,
         "Consult Dostya-bot help here : \r\nhttps://github.com/FAForever/Dostya/blob/master/README.md"
-    ).then(callback(commands.COMMAND_SUCCESS));
+    );
+    callback(commands.COMMAND_SUCCESS);
 }
 
 function sendTracker(command, commandArguments, message,  callback) {
@@ -149,7 +146,8 @@ function getDefinitions(command, commandArguments, message, callback) {
     }
     const args = commandArguments.split(" ");
     if (args.length < 3) {
-        callback(commands.COMMAND_MISUSE)
+        callback(commands.COMMAND_MISUSE);
+        return;
     }
     user.defineSpecific(message, args[0], args[1], args[2])
         .then(callback(commands.COMMAND_SUCCESS));
@@ -226,7 +224,7 @@ function link(command, commandArguments, message,  callback) {
 }
 
 function showLinks(command, commandArguments, message,  callback) {
-    discord.sendLinktable(message.channel, settings)
+    discord.sendLinkTable(message.channel, settings)
         .then(callback(commands.COMMAND_SUCCESS));
 }
 
@@ -411,18 +409,17 @@ function roles(command, commandArguments, message, callback) {
 }
 
 const COMMANDS_MAP = {
-    respond: ping,
-    alive: ping,
-    unit: searchUnit,
-    searchunit: searchUnit,
-    wiki,
-    pool: ladderPool,
-    ladderpool: ladderPool,
-    ladder: ladderPool,
-    mappool: ladderPool,
-    replay: lastReplay,
-    lastreplay: lastReplay,
-    clan,
+    respond: ping, // ok
+    alive: ping, // ok
+    unit: searchUnit, // ok
+    searchunit: searchUnit, // ok
+    wiki, // ok
+    pool: ladderPool, // ok
+    ladderpool: ladderPool, // ok
+    ladder: ladderPool, // ok
+    mappool: ladderPool, // ok
+    replay: replay, // ok
+    clan, //
     player,
     ratings: player,
     map,
@@ -464,25 +461,52 @@ const COMMANDS_MAP = {
     roles,
 };
 
+function commandNotFound(command, message, callback) {
+    const specs = utils.getSpecifics(message.guild);
 
+    if (specs["recorded-messages"][command]) {
+        discord.sendMessage(message.channel, specs["recorded-messages"][command])
+            .then(callback(commands.COMMAND_SUCCESS));
+    } else {
+        callback(commands.COMMAND_UNKNOWN);
+    }
+}
+
+/**
+ * Searches the command in commands map
+ *
+ * @param {Discord.Message} message object from Discord.
+ * @param {function} callback - callback is anonymous function in `scripts/discord_uplink.js`
+ */
 function onPrefixFound(message, callback) {
     let content = message.content;
-    for (let i = 0; i < settings.prefixes.length; i++) {
-        const prefix = settings.prefixes[i];
+    let hasPrefix = false;
+    for (let prefix of settings.prefixes) {
         if (content.startsWith(prefix)) {
             content = content.replace(prefix, "").trim();
+            hasPrefix = true;
             break;
         }
     }
 
-    let command = content.split(" ", 1)[0].toLowerCase();
-    if (COMMANDS_MAP[command]) {
-        let commandArguments = command.split(" ").slice(1).join(" ");
+    // TODO: add in far far future commands detection in text
+    if (hasPrefix) {
+        let command = content.split(" ", 1)[0].toLowerCase();
+        let commandArguments = content.split(" ").slice(1).join(" ") || null;
         callback(command, commandArguments);
     }
 }
 
-
+/**
+ * Executes command.
+ * Checks if command is available for user.
+ *
+ * @param command
+ * @param commandArguments
+ * @param coolDown
+ * @param message
+ * @param callback - behavior.onCommandExecuted
+ */
 function executeCommand(command, commandArguments, coolDown, message, callback) {
     const isDeveloper = user.isDeveloper(message.author, settings);
     const isModerator = user.isModerator(message.member, message.guild);

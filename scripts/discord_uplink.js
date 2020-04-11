@@ -12,7 +12,7 @@ const ban = require("./behavior/ban");
 const behavior = require("./behavior");
 
 // Variable initialization
-let currentCooldown = {};
+let currentCoolDown = {};
 const settings = require("../configuration/settings.json");
 
 const client = new Discord.Client();
@@ -82,15 +82,16 @@ client.on("message", message => {
     discord.aliasCommand(message, settings);
 
     behavior.onPrefixFound(message, function (command, commandArgs) {
+        console.log("command", command);
         behavior.executeCommand(
-            command, commandArgs, currentCooldown[message.guild.id], message,
+            command, commandArgs, currentCoolDown[message.guild.id], message,
             onCommandExecuted.bind(this, command, message, commandArgs)
         );
     });
 });
 
-function onCommandExecuted(command, message, commandArgs, state, err) {
-    if (err) {
+function onCommandExecuted(command, message, commandArgs, state, error_or_misuse_message) {
+    if (state === commands.COMMAND_MISUSE && error_or_misuse_message) {
         utils.log(`Error occurred during executing command: ${command}, message: ${message.guild}, ${commandArgs}`);
     }
 
@@ -105,7 +106,7 @@ function onCommandExecuted(command, message, commandArgs, state, err) {
         // 0 means the command executed gracefully
         case commands.COMMAND_SUCCESS:
             utils.log("EOI with " + message.author.username + "", "OK", message.guild);
-            irc.startCooldown(settings, currentCooldown, message.guild.id);
+            irc.startCooldown(settings, currentCoolDown, message.guild.id);
             break;
 
         // 1 means the command could be executed because of cooldown
@@ -115,16 +116,35 @@ function onCommandExecuted(command, message, commandArgs, state, err) {
 
         // 2 is command not found
         case commands.COMMAND_UNKNOWN:
+            discord.sendMessage(
+                message.channel,
+                `Couldn't find ${command}, type "!help" for commands list.`
+            );
             utils.log("Could not find [" + command + "]", "--", message.guild);
             break;
 
         // 3 is command misuse
         case commands.COMMAND_MISUSE:
+            if (error_or_misuse_message) {
+                discord.sendMessage(
+                    message.author,
+                    `Wrong usage. Please use: "!${command} ${error_or_misuse_message}".`
+                );
+            } else {
+                discord.sendMessage(
+                    message.author,
+                    `Wrong usage. For more information use "!help".`
+                );
+            }
             utils.log("Misuse of command [" + command + "]", "--", message.guild);
             break;
 
         // 4 is command forbidden
         case commands.COMMAND_FORBIDDEN:
+            discord.sendMessage(
+                message.author,
+                `Command ${command} is forbidden.`
+            );
             utils.log("Command forbidden in current state [" + command + "]", "--", message.guild);
             break;
     }
