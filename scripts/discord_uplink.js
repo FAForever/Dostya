@@ -160,7 +160,7 @@ function refreshReceivers(settings, client) {
         ) {
             for (let i = 0; i < client.guilds.array().length; i++) {
                 const guild = client.guilds.array()[i];
-                const channel = guild.channels.find("name", allowedBridge);
+                const channel = guild.channels.find(e => e.name === allowedBridge);
                 if (channel != null && channel.type === "text") {
                     irc.addToReceivers(allowedBridge, channel);
                     utils.log("Added [" + guild.name + "] #" + channel.name + " to receivers", ">>", guild);
@@ -176,10 +176,10 @@ function refreshAnnouncers(settings, client) {
     for (const guild of guilds.values()) {
         const specs = utils.getSpecifics(guild);
         const channelIds = specs["announcement-channels"];
-        for (let channelId in channelIds) {
+        for (let channelId of channelIds) {
             if (channelIds.hasOwnProperty(channelId)) {
-                const channelId = utils.getIdFromString(channelIds[channelId]);
-                const channel = guild.channels.find("id", channelId);
+                const channelId = utils.getIdFromString(channelId);
+                const channel = guild.channels.find(e => e.id === channelId);
                 rss.addToAnnouncers(channel);
                 utils.log("Added [" + guild.name + "] #" + channel.name + " to announcers", ">>", guild);
             }
