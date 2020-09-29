@@ -158,11 +158,13 @@ function fetchPlayer(playerName, apiUrl, callback) {
                     case "globalRating":
                         player.global = {};
                         player.global.rating = thisData.attributes.rating;
+                        player.global.numberOfGames = thisData.attributes.numberOfGames;
                         break;
 
                     case "ladder1v1Rating":
                         player.ladder = {};
                         player.ladder.rating = thisData.attributes.rating;
+                        player.ladder.numberOfGames = thisData.attributes.numberOfGames;
                         break;
 
                     case "avatarAssignment":
@@ -228,25 +230,44 @@ function fetchPlayer(playerName, apiUrl, callback) {
                         "name": "Ladder rating",
                         "value": "" + Math.floor(player.ladder.rating),
                         "inline": true
-                    });
+                    }
+                );
+                embedMes["embed"].fields.push(
+                    {
+                        "name": "Ladder games",
+                        "value": "" + Math.floor(player.ladder.numberOfGames),
+                        "inline": true
+                    }
+                );
             }
-
+            embedMes["embed"].fields.push({
+                name: '\u200B',
+                value: '\u200B',
+                inline: false
+            });
             if (player.global) {
                 embedMes["embed"].fields.push(
                     {
                         "name": "Global rating",
                         "value": "" + Math.floor(player.global.rating),
                         "inline": true
-                    });
+                    }
+                );
+                embedMes["embed"].fields.push(
+                    {
+                        "name": "Global games",
+                        "value": "" + Math.floor(player.global.numberOfGames),
+                        "inline": true
+                    }
+                );
             }
 
             if (player.clans.length > 0) {
-
                 for (i = 0; i < player.clans.length; i++) {
                     const thisClan = player.clans[i];
                     embedMes["embed"].fields.push(
                         {
-                            "name": "Clan : " + thisClan.name + "[" + thisClan.tag + "]" + "",
+                            "name": "Clan : " + thisClan.name + " [" + thisClan.tag + "]",
                             "value": "Clan size : " + thisClan.size + "\n" + "URL : " + thisClan.websiteUrl,
                         });
                 }

@@ -79,7 +79,7 @@ function sendIrcMessage(channel, str) {
     console.log("sendIrcMessage -------------------");
     console.log(channel.name, str);
     console.log("-------------------");
-    // client.say("#" + channel, str); // TODO: remove
+    client.say("#" + channel, str); // TODO: remove
 }
 
 module.exports = {
