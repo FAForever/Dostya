@@ -14,6 +14,10 @@ function cleanReceivers() {
 
 /// Sends a message received from the IRC
 function sendFromIrc(channelName, authorString, messageString) {
+    if (!receivers[channelName]) {
+        return;
+    }
+
     for (let i = 0; i < receivers[channelName].length; i++) {
         let channel = receivers[channelName][i];
         if (channel) {
@@ -39,7 +43,9 @@ function initializeIrc(settings) {
         }
     });
     for (let k in settings["allowed-bridges"]) {
-        ircUpLink.channels.push("#" + k);
+        if (ircUpLink.channels.indexOf("#" + k) === -1) {
+            ircUpLink.channels.push("#" + k);
+        }
     }
     startIrc(settings);
 }

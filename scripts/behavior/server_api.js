@@ -1,4 +1,5 @@
 const utils = require("../utility");
+const {sendMessage} = require("./discord");
 const db = require("../db").db;
 
 
@@ -391,7 +392,9 @@ function initializeMapWatching(settings, client) {
                 const channels = utils.getSpecifics({"id": guildId, "name": guildName})["map-watch-channels"];
                 for (let i = 0; i < channels.length; i++) {
                     const channel = client.channels.get(channels[i]);
-                    if (channel !== undefined) sendMessage(channel, message);
+                    if (channel !== undefined) {
+                        sendMessage(channel, message);
+                    }
                 }
             })
         });

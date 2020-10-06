@@ -157,7 +157,7 @@ function sendMessage(channel, msgContent) {
         utils.log("SendDiscordMessage ________________", "DD");
         utils.log("Sent message '" + msgContent + "' on " + channel.name, "DD", channel.guild);
         utils.log("________________", "DD");
-        return channel.send(msgContent); // TODO: remove
+        return channel.send(msgContent);
     }
     return utils.emptyPromise();
 }
