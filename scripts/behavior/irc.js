@@ -86,10 +86,6 @@ function startIrc() {
     } else {
         utils.log("IRC Client already started, not starting another one.", "WW");
     }
-    for (let k in ircUpLink.channels) {
-        const channel = ircUpLink.channels[k];
-        sendFromIrc(channel.substr(1, channel.length), "IRC", "`I'm working on Dostya, don't report double messages, please. (Dragonite)`");
-    }
 }
 
 /// Stops and start irc
