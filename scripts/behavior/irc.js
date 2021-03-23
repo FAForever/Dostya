@@ -75,7 +75,7 @@ function startIrc() {
                         sendFromIrc(channelName.substr(1, channelName.length), author, message);
                     }
                 });
-                sendFromIrc(channelName.substr(1, channelName.length), "IRC", "`Connection established.`");
+                // sendFromIrc(channelName.substr(1, channelName.length), "IRC", "`Connection established.`");
             }
 
             /// Add checkmark on last sent irc message on delivery
