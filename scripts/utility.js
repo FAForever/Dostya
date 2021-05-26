@@ -327,16 +327,16 @@ function getFaction(int_fac){
 			break;
 			
 		case 1:
-			return "uef"
+			return "seraphim"
 			break;
 		case 2:
-			return "aeon"
+			return "uef"
 			break;
 		case 3:
-			return "cybran"
+			return "aeon"
 			break;
 		case 4:
-			return "seraphim"
+			return "cybran"
 			break;
 		case 5:
 			return "random"
