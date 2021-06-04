@@ -1,6 +1,6 @@
 // Scripts
 const utils = require("./scripts/utility.js");
-const client = require("./scripts/discord_uplink.js").client;
+const discord_client = require("./scripts/discord_uplink.js").client;
 const irc = require("./scripts/behavior/irc.js");
 const settings = require("./configuration/settings.json");
 
@@ -29,6 +29,6 @@ process.on("SIGINT", function () {
     }, 1000);
 });
 
-client.login(token.token).then(() => {
+discord_client.login(token.token).then(() => {
     utils.log("Dostya is on Discrod");
 });

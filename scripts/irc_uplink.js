@@ -16,7 +16,7 @@ function initializeClient(callback) {
         '_Discord', {
             userName: '_Discord-Uplink',
             realName: '_Discord-Dostya-Uplink',
-            port: 8067,
+            port: 6667,
             autoRejoin: false,
             autoConnect: true,
             retryCount: 0,

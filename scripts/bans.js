@@ -20,9 +20,9 @@ let isInitialized = false;
 
 async function initialize(guilds) {
     utils.log("Starting guilds databases initialization...", "--", fakeGuild);
-    const guildList = guilds.array();
-    for (let k in guildList) {
-        const guild = guildList[k];
+    const guildList = guilds.cache;
+    for (let key in guildList) {
+        const guild = guildList.get(key);
         await initializeGuildDatabase(guild);
     }
     utils.log("Guilds database initialization finished", "--", fakeGuild);
@@ -110,10 +110,10 @@ async function updateBans(guilds) {
     if (!isInitialized) {
         return false;
     }
-    const guildList = guilds.array();
+    const guildList = guilds.cache;
     utils.log(`Updating the bans of ${guildList.length} guilds`, "++", fakeGuild);
-    for (let k in guildList) {
-        const guild = guildList[k];
+    for (let key in guildList) {
+        const guild = guildList.get(key);
         const db = await getGuildDatabase(guild);
         db.each("SELECT id, target_id, unban_at FROM bans", async function (err, row) {
             if (err) {

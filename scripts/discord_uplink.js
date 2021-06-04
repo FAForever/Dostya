@@ -158,12 +158,19 @@ function refreshReceivers(settings, client) {
             settings["allowed-bridges"].hasOwnProperty(allowedBridge)
             && settings["allowed-bridges"][allowedBridge].length > 0
         ) {
-            for (let i = 0; i < client.guilds.array().length; i++) {
-                const guild = client.guilds.array()[i];
-                const channel = guild.channels.find(e => e.name === allowedBridge);
-                if (channel != null && channel.type === "text") {
+            for (let discordId of settings["allowed-bridges"][allowedBridge]) {
+                let channel = client.channels.cache.find(
+                    channel_ => {
+                        return channel_.id === discordId;
+                    }
+                );
+
+                if (channel) {
                     irc.addToReceivers(allowedBridge, channel);
-                    utils.log("Added [" + guild.name + "] #" + channel.name + " to receivers", ">>", guild);
+                    utils.log(
+                        "Added [" + allowedBridge + "] #" + channel.name + " to receivers",
+                        ">>", channel
+                    );
                 }
             }
         }
@@ -173,7 +180,8 @@ function refreshReceivers(settings, client) {
 function refreshAnnouncers(settings, client) {
     const guilds = client.guilds;
     rss.cleanAnnouncers();
-    for (const guild of guilds.values()) {
+    for (const key in guilds.cache) {
+        let guild = guilds.cache.get(key);
         const specs = utils.getSpecifics(guild);
         const channelIds = specs["announcement-channels"];
         for (let channelId of channelIds) {
